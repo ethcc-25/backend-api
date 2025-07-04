@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { AaveService } from '../services/aave.service';
 import { FluidService } from '../services/fluid.service';
 import { MorphoService } from '../services/morpho.service';

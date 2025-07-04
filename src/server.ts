@@ -2,9 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
+import profileRoutes from './routes/profile';
+import connectDB, { closeConnection } from './config/database';
 import { cache } from './utils/cache';
 
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,13 +55,14 @@ app.use(rateLimiter);
 
 // Routes
 app.use('/api', routes);
+app.use('/api/profile', profileRoutes);
 
 // Root endpoint with API documentation
 app.get('/', (req, res) => {
   res.json({
     name: 'DeFi APY Server',
     version: '1.0.0',
-    description: 'A comprehensive DeFi APY aggregator supporting AAVE, Fluid, and Morpho protocols across multiple chains',
+    description: 'A comprehensive DeFi APY aggregator supporting AAVE, Fluid, and Morpho protocols across multiple chains, with MongoDB profile management',
     endpoints: {
       health: 'GET /api/health - Health check',
       chains: 'GET /api/chains - Get supported chains',
@@ -76,6 +82,12 @@ app.get('/', (req, res) => {
       cache: {
         stats: 'GET /api/cache/stats - Get cache statistics',
         clear: 'DELETE /api/cache - Clear cache'
+      },
+      profile: {
+        create: 'POST /api/profile - Create or update profile',
+        get: 'GET /api/profile/:user_address - Get profile',
+        getAll: 'GET /api/profile - Get all profiles',
+        delete: 'DELETE /api/profile/:user_address - Delete profile'
       }
     },
     supportedChains: ['ethereum', 'arbitrum', 'base'],
@@ -103,17 +115,19 @@ app.use('*', (req, res) => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully...');
+const gracefulShutdown = async () => {
+  console.log('Shutting down gracefully...');
+  await closeConnection();
   process.exit(0);
-});
+};
 
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully...');
-  process.exit(0);
-});
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 DeFi APY Server running on port ${PORT}`);
   console.log(`📡 API documentation available at http://localhost:${PORT}/`);
-}); 
+  console.log(`📊 MongoDB profiles API available at http://localhost:${PORT}/api/profile`);
+});
+
+export default server; 
