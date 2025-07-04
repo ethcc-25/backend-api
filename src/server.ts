@@ -1,120 +1,95 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import swaggerUi from 'swagger-ui-express';
+import dotenv from 'dotenv';
 import routes from './routes';
-import { getSupportedChains } from './config/chains';
+import { cache } from './utils/cache';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet());
+// Custom request logging middleware
+const requestLogger = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+  });
+  
+  next();
+};
+
+// Simple rate limiting
+const rateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  const key = req.ip;
+  const windowMs = 60 * 1000; // 1 minute
+  const maxRequests = 100;
+  
+  const cacheKey = `rate_limit:${key}`;
+  const requests = cache.get<number>(cacheKey) || 0;
+  
+  if (requests >= maxRequests) {
+    res.status(429).json({
+      error: 'Too many requests, please try again later',
+      retryAfter: Math.ceil(windowMs / 1000)
+    });
+    return;
+  }
+  
+  cache.set(cacheKey, requests + 1, windowMs / 1000);
+  next();
+};
+
+// Middleware
 app.use(cors());
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-
-app.use(limiter);
-
-// Body parsing middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger);
+app.use(rateLimiter);
 
-// API routes
+// Routes
 app.use('/api', routes);
 
-// Root endpoint
+// Root endpoint with API documentation
 app.get('/', (req, res) => {
   res.json({
-    message: 'DeFi APY Server',
+    name: 'DeFi APY Server',
     version: '1.0.0',
+    description: 'A comprehensive DeFi APY aggregator supporting AAVE, Fluid, and Morpho protocols across multiple chains',
     endpoints: {
-      health: '/api/health',
-      all: '/api/all',
-      aave: '/api/aave'
+      health: 'GET /api/health - Health check',
+      chains: 'GET /api/chains - Get supported chains',
+      protocols: 'GET /api/protocols - Get all protocols data',
+      aave: {
+        all: 'GET /api/aave - Get AAVE data for all chains',
+        chain: 'GET /api/aave/:chain - Get AAVE data for specific chain'
+      },
+      fluid: {
+        all: 'GET /api/fluid - Get Fluid data for all chains',
+        chain: 'GET /api/fluid/:chain - Get Fluid data for specific chain'
+      },
+      morpho: {
+        all: 'GET /api/morpho - Get Morpho data for all chains',
+        chain: 'GET /api/morpho/:chain - Get Morpho data for specific chain'
+      },
+      cache: {
+        stats: 'GET /api/cache/stats - Get cache statistics',
+        clear: 'DELETE /api/cache - Clear cache'
+      }
     },
-    supportedChains: getSupportedChains()
+    supportedChains: ['ethereum', 'arbitrum', 'base'],
+    supportedProtocols: ['aave', 'fluid', 'morpho']
   });
 });
 
-// Swagger documentation
-const swaggerOptions = {
-  swaggerDefinition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'DeFi APY API',
-      version: '1.0.0',
-      description: 'Backend server for fetching APY data from AAVE protocol',
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
-      },
-    ],
-    paths: {
-      '/api/all': {
-        get: {
-          summary: 'Get all protocols data',
-          description: 'Returns APY data from all supported protocols across all chains',
-          responses: {
-            200: {
-              description: 'Successful response',
-            },
-          },
-        },
-      },
-      '/api/aave': {
-        get: {
-          summary: 'Get AAVE data for all chains',
-          description: 'Returns AAVE APY data for all supported chains',
-          responses: {
-            200: {
-              description: 'Successful response',
-            },
-          },
-        },
-      },
-      '/api/aave/{chain}': {
-        get: {
-          summary: 'Get AAVE data for specific chain',
-          description: 'Returns AAVE APY data for a specific chain',
-          parameters: [
-            {
-              name: 'chain',
-              in: 'path',
-              required: true,
-              description: 'Chain name (ethereum, arbitrum, base)',
-              schema: {
-                type: 'string',
-              },
-            },
-          ],
-          responses: {
-            200: {
-              description: 'Successful response',
-            },
-          },
-        },
-      },
-    },
-  },
-  apis: ['./src/routes/*.ts'],
-};
-
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  console.error('Error:', err);
   res.status(500).json({
     success: false,
-    error: 'Something went wrong!',
-    timestamp: Date.now()
+    error: 'Internal server error',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -122,12 +97,23 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Route not found',
-    timestamp: Date.now()
+    error: 'Endpoint not found',
+    timestamp: new Date().toISOString()
   });
 });
 
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  process.exit(0);
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Supported chains: ${getSupportedChains().join(', ')}`);
+  console.log(`🚀 DeFi APY Server running on port ${PORT}`);
+  console.log(`📡 API documentation available at http://localhost:${PORT}/`);
 }); 
