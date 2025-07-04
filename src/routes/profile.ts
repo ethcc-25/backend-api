@@ -16,12 +16,6 @@ interface ProfileData {
   }>;
 }
 
-// Check if MongoDB is connected
-const isMongoDBConnected = (): boolean => {
-  const db = getDatabase();
-  return db !== null;
-};
-
 // @route   GET /api/profile
 // @desc    Get all profiles
 // @access  Public
