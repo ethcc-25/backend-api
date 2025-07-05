@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts",
+    "dev": "nodemon --exec ts-node src/server.ts",
     "watch": "nodemon --exec ts-node src/server.ts",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
     "pm2:dev": "pm2 start ecosystem.config.js --env development",

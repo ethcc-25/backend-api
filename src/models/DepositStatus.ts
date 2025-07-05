@@ -30,7 +30,7 @@ const depositStatusSchema = new Schema<IDepositStatusDocument>({
   opportunity: {
     protocol: { type: String, required: true },
     apy: { type: Number, required: true },
-    chain: { type: String, required: true },
+    chainId: { type: String, required: true },
     poolAddress: { type: String },
     additionalData: { type: Schema.Types.Mixed }
   },
