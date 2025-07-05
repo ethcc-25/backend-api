@@ -138,20 +138,54 @@ export class DepositService {
   }
 
   /**
-   * Get chain name from domain ID
+   * Get Viem chain configuration from domain ID
    */
-  private getChainNameFromDomain(domain: number): string {
+  private getViemChainFromDomain(domain: number) {
     switch (domain) {
-      case 0:
-        return 'ethereum';
-      case 2:
-        return 'optimism';
-      case 3:
-        return 'arbitrum';
-      case 6:
-        return 'base';
-      case 14:
-        return 'world';
+      case 0: // Ethereum
+        return mainnet;
+      case 3: // Arbitrum
+        return arbitrum;
+      case 6: // Base
+        return base;
+      case 14: // World
+        return worldchain;
+      default:
+        throw new Error(`Unsupported chain domain: ${domain}`);
+    }
+  }
+
+  /**
+   * Get chain config from domain ID
+   */
+  private getChainConfigFromDomain(domain: number) {
+    switch (domain) {
+      case 0: // Ethereum
+        return getChainConfig('ethereum');
+      case 3: // Arbitrum
+        return getChainConfig('arbitrum');
+      case 6: // Base
+        return getChainConfig('base');
+      case 14: // World
+        return getChainConfig('world');
+      default:
+        throw new Error(`Unsupported chain domain: ${domain}`);
+    }
+  }
+
+  /**
+   * Get YieldManager contract from domain ID
+   */
+  private getYieldManagerContractFromDomain(domain: number) {
+    switch (domain) {
+      case 0: // Ethereum
+        return getYieldManagerContract('ethereum');
+      case 3: // Arbitrum
+        return getYieldManagerContract('arbitrum');
+      case 6: // Base
+        return getYieldManagerContract('base');
+      case 14: // World
+        return getYieldManagerContract('world');
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -170,15 +204,13 @@ export class DepositService {
     }
 
     try {
+
       depositStatus = await this.updateDepositStatus(depositStatus._id, {
         bridgeTransactionHash: transactionHash,
         status: 'pending_attestation'
       });
 
       console.log(`Waiting for attestation for transaction: ${transactionHash}`);
-
-      // Convert domain to chain name for attestation retrieval
-      const sourceChainName = this.getChainNameFromDomain(depositStatus.srcChainDomain);
 
       // Poll for attestation (max 10 minutes)
       const maxAttempts = 60; // 10 minutes with 10-second intervals
@@ -189,7 +221,7 @@ export class DepositService {
         try {
           attestationData = await this.retrieveService.retrieveAttestation(
             transactionHash,
-            sourceChainName
+            depositStatus.srcChainDomain
           );
 
           if (attestationData && attestationData.status === 'complete') {
@@ -221,9 +253,8 @@ export class DepositService {
       });
 
       // Process deposit on destination chain
-      const destChainName = this.getChainNameFromDomain(depositStatus.dstChainDomain);
       const depositTxHash = await this.processDeposit(
-        destChainName,
+        depositStatus.dstChainDomain,
         attestationData.message!,
         attestationData.attestation!
       );
@@ -258,7 +289,7 @@ export class DepositService {
    * Process deposit on destination chain using YieldManager contract
    */
   private async processDeposit(
-    chainName: string,
+    chainDomain: number,
     message: string,
     attestation: string
   ): Promise<string> {
@@ -266,14 +297,14 @@ export class DepositService {
       throw new Error('Private key not configured');
     }
 
-    const contractConfig = getYieldManagerContract(chainName);
+    const contractConfig = this.getYieldManagerContractFromDomain(chainDomain);
     if (!contractConfig) {
-      throw new Error(`YieldManager contract not configured for chain: ${chainName}`);
+      throw new Error(`YieldManager contract not configured for domain: ${chainDomain}`);
     }
 
-    const chainConfig = getChainConfig(chainName);
+    const chainConfig = this.getChainConfigFromDomain(chainDomain);
     if (!chainConfig) {
-      throw new Error(`Chain configuration not found for: ${chainName}`);
+      throw new Error(`Chain configuration not found for domain: ${chainDomain}`);
     }
 
     try {
@@ -281,7 +312,7 @@ export class DepositService {
       const account = privateKeyToAccount(this.privateKey as `0x${string}`);
       
       // Get chain configuration
-      const chain = this.getViemChain(chainName);
+      const chain = this.getViemChainFromDomain(chainDomain);
       
       // Create wallet client
       const walletClient = createWalletClient({
@@ -297,7 +328,7 @@ export class DepositService {
         client: walletClient
       });
 
-      console.log(`Processing deposit on ${chainName} chain...`);
+      console.log(`Processing deposit on domain ${chainDomain}...`);
       console.log(`Contract address: ${contractConfig.address}`);
       console.log(`Message length: ${message.length}`);
       console.log(`Attestation length: ${attestation.length}`);

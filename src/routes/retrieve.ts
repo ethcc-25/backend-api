@@ -23,9 +23,20 @@ router.get('/attestation/:transactionHash', async (req: Request, res: Response):
             return;
         }
 
-        console.log(`Retrieving attestation for transaction: ${transactionHash}, domain: ${domain}`);
+        // Validate domain parameter
+        const sourceDomain = domain ? parseInt(domain as string) : undefined;
+        if (sourceDomain === undefined || isNaN(sourceDomain)) {
+            res.status(400).json({
+                success: false,
+                error: 'Domain parameter is required and must be a valid number',
+                timestamp: new Date().toISOString()
+            } as AttestationResponse);
+            return;
+        }
 
-        const attestation = await retrieveService.retrieveAttestation(transactionHash, domain as string);
+        console.log(`Retrieving attestation for transaction: ${transactionHash}, domain: ${sourceDomain}`);
+
+        const attestation = await retrieveService.retrieveAttestation(transactionHash, sourceDomain);
 
         if (attestation) {
             res.json({
