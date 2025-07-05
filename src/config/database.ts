@@ -18,17 +18,20 @@ const connectDB = async (): Promise<void> => {
 
   const isLinux = os.platform() === 'linux';
   console.log(`🔄 Connecting to MongoDB from ${os.platform()} (${os.release()})...`);
+  console.log(`🔑 Using username: paul`);
+  console.log(`🔑 Password length: ${mongoPassword.length} characters`);
+  console.log(`🔑 Password starts with: ${mongoPassword.substring(0, 3)}...`);
 
   // Configurations à tester dans l'ordre
   const configs = [
     {
-      name: 'Standard SSL',
-      uri: `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc`,
+      name: 'Standard SSL with URL encoding',
+      uri: `mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
       options: {
         serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-        connectTimeoutMS: 5000,
-        socketTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
         maxPoolSize: 5,
         tls: true,
         tlsAllowInvalidCertificates: true,
@@ -36,27 +39,35 @@ const connectDB = async (): Promise<void> => {
       }
     },
     {
-      name: 'Minimal SSL',
-      uri: `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&ssl=true`,
+      name: 'Standard SSL without URL encoding',
+      uri: `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
       options: {
         serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-        connectTimeoutMS: 5000,
-        socketTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
         maxPoolSize: 5,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true,
       }
     },
     {
-      name: 'No SSL (Direct)',
-      uri: `mongodb://paul:${mongoPassword}@ac-lzdpuke-shard-00-00.4o0hvn9.mongodb.net:27017,ac-lzdpuke-shard-00-01.4o0hvn9.mongodb.net:27017,ac-lzdpuke-shard-00-02.4o0hvn9.mongodb.net:27017/defi-apy-db?replicaSet=atlas-numqkw-shard-0&authSource=admin&retryWrites=true&w=majority`,
+      name: 'Explicit auth with credentials',
+      uri: `mongodb+srv://eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
       options: {
+        auth: {
+          username: 'paul',
+          password: mongoPassword
+        },
         serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-        connectTimeoutMS: 5000,
-        socketTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
         maxPoolSize: 5,
-        tls: false,
-        ssl: false,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true,
       }
     }
   ];
@@ -68,7 +79,7 @@ const connectDB = async (): Promise<void> => {
       
       // Créer une promesse de timeout
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Connection timeout after 8 seconds`)), 8000);
+        setTimeout(() => reject(new Error(`Connection timeout after 15 seconds`)), 15000);
       });
 
       // Créer une promesse de connexion
@@ -92,12 +103,22 @@ const connectDB = async (): Promise<void> => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.log(`❌ ${config.name} failed: ${errorMessage}`);
+      
+      // Log plus détaillé pour les erreurs d'authentification
+      if (errorMessage.includes('auth') || errorMessage.includes('Authentication') || errorMessage.includes('credential')) {
+        console.log(`🔍 Authentication error detected. Check username/password in MongoDB Atlas.`);
+      }
       continue;
     }
   }
 
   // Si aucune configuration n'a fonctionné
   console.error('❌ All MongoDB connection attempts failed');
+  console.log('💡 Suggestions:');
+  console.log('   1. Check if username "paul" exists in MongoDB Atlas');
+  console.log('   2. Verify password is correct');
+  console.log('   3. Check if IP address is whitelisted');
+  console.log('   4. Ensure user has proper roles (atlasAdmin or readWrite)');
   console.log('Server will continue without MongoDB. Profile endpoints will use in-memory storage.');
 };
 

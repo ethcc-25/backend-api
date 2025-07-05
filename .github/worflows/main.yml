@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          
+      - name: Clean cache
+        run: |
+          rm -rf node_modules yarn.lock
+          rm -rf ~/.npm
+          rm -rf ~/.pm2/logs/*
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create .env file
+        run: |
+          echo "NODE_ENV"=${{ vars.NODE_ENV }}" > .env
+          echo "MONGODB_PASSWORD"=${{ vars.MONGODB_PASSWORD }}" >> .env
+          echo "PORT"=3000 >> .env
+
+      - name: Build server
+        run: npm run build
+
+      - name: Restart process
+        run: npx pm2 restart monde-api --time
+
+      - name: Print current directory
+        run: pwd
