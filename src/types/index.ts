@@ -130,4 +130,46 @@ export interface AttestationRequest {
 
 export interface AttestationResponse extends ApiResponse<AttestationMessage> {
   data?: AttestationMessage;
-} 
+}
+
+// Bridge Flow Types
+export interface BridgeOpportunity {
+  protocol: string;
+  apy: number;
+  chain: string;
+  chainId: number;
+  poolAddress?: string;
+  poolName?: string;
+  symbol?: string;
+  poolApy?: number;
+  rewardsApy?: number;
+  tvl?: number;
+  tokens?: Token[];
+  additionalData?: any;
+}
+
+export interface BridgeRequest {
+  chainSource: string;
+  chainDest: string;
+  userWallet: string;
+  amount: string;
+  opportunity: BridgeOpportunity;
+  transactionHash?: string;
+}
+
+export interface BridgeStatus {
+  _id: string;
+  chainSource: string;
+  chainDest: string;
+  userWallet: string;
+  amount: string;
+  opportunity: BridgeOpportunity;
+  transactionHash?: string;
+  status: 'pending_attestation' | 'attestation_received' | 'processing_deposit' | 'deposit_confirmed' | 'completed' | 'failed';
+  attestationMessage?: string;
+  attestation?: string;
+  depositTxHash?: string;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

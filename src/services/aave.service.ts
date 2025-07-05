@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import { AaveData, PoolData } from '../types';
 import { cache } from '../utils/cache';
-import { getChainConfig } from '../config/chains';
+import { getChainConfig, getSupportedChainsForProtocol } from '../config/chains';
 
 export class AaveService {
   private static getProvider(chainName: string) {
@@ -128,7 +128,7 @@ export class AaveService {
   }
 
   async getAllChainsData(): Promise<AaveData[]> {
-    const supportedChains = ['ethereum', 'arbitrum', 'base'];
+    const supportedChains = getSupportedChainsForProtocol('aave');
     const results: AaveData[] = [];
 
     for (const chainName of supportedChains) {
@@ -143,4 +143,4 @@ export class AaveService {
 
     return results;
   }
-} 
+}

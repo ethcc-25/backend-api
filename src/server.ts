@@ -4,14 +4,11 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import profileRoutes from './routes/profile';
 import retrieveRoutes from './routes/retrieve';
-import connectDB, { closeConnection } from './config/database';
+import bridgeRoutes from './routes/bridge';
+import connectDB from './config/database';
 import { cache } from './utils/cache';
 
 dotenv.config();
-
-// Connect to MongoDB
-console.log('Connecting to MongoDB...');
-connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -59,6 +56,7 @@ app.use(rateLimiter);
 app.use('/api', routes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/retrieve', retrieveRoutes);
+app.use('/api/bridge', bridgeRoutes);
 
 // Root endpoint with API documentation
 app.get('/', (req, res) => {
@@ -69,7 +67,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: 'GET /api/health - Health check',
       chains: 'GET /api/chains - Get supported chains',
-      protocols: 'GET /api/protocols - Get all protocols data',
+      bestOpportunity: 'GET /api/best-opportunity - Get the best yield opportunity across all protocols and chains',
       aave: {
         all: 'GET /api/aave - Get AAVE data for all chains',
         chain: 'GET /api/aave/:chain - Get AAVE data for specific chain'
@@ -99,6 +97,14 @@ app.get('/', (req, res) => {
         attestationPost: 'POST /api/retrieve/attestation - Retrieve CCTP attestation via POST request',
         domains: 'GET /api/retrieve/domains - Get supported CCTP domain mappings',
         test: 'GET /api/retrieve/test/:transactionHash - Test endpoint to see raw Circle API response'
+      },
+      bridge: {
+        info: 'GET /api/bridge - Bridge API information',
+        initialize: 'POST /api/bridge/initialize - Initialize bridge request',
+        waitConfirmation: 'POST /api/bridge/wait-confirmation - Wait for CCTP confirmation and process deposit',
+        status: 'GET /api/bridge/status/:id - Get bridge status by ID',
+        statusByTx: 'GET /api/bridge/status/tx/:txHash - Get bridge status by transaction hash',
+        history: 'GET /api/bridge/history/:userWallet - Get user bridge history'
       }
     },
     supportedChains: ['ethereum', 'arbitrum', 'base'],
@@ -126,9 +132,8 @@ app.use('*', (req, res) => {
 });
 
 // Graceful shutdown
-const gracefulShutdown = async () => {
+const gracefulShutdown = () => {
   console.log('Shutting down gracefully...');
-  await closeConnection();
   process.exit(0);
 };
 
@@ -137,6 +142,11 @@ process.on('SIGINT', gracefulShutdown);
 
 const server = app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 DeFi APY Server running on port ${PORT}`);
+  
+  // Connect to MongoDB after server starts
+  console.log('Connecting to MongoDB...');
+  connectDB();
+  
   console.log(`📡 API documentation available at http://0.0.0.0:${PORT}/`);
   console.log(`📊 MongoDB profiles API available at http://0.0.0.0:${PORT}/api/profile`);
   console.log(`🌐 Server accessible from external IPs on port ${PORT}`);

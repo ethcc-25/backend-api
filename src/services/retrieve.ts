@@ -18,19 +18,28 @@ export class RetrieveService {
     /**
      * Retrieve CCTP attestation for a given transaction hash
      * @param transactionHash - The transaction hash from the burn transaction
-     * @param sourceDomain - The source domain ID (defaults to Ethereum Sepolia: 0)
+     * @param chainSource - The source chain name
      * @returns Promise<AttestationMessage> - The attestation message
      */
     async retrieveAttestation(
         transactionHash: string,
-        sourceDomain: string
+        chainSource: string
     ): Promise<AttestationMessage | null> {
-        console.log(`Retrieving attestation for transaction: ${transactionHash}`);
+        console.log(`Retrieving attestation for transaction: ${transactionHash} from chain: ${chainSource}`);
 
         if (!transactionHash || transactionHash.length < 10) {
             throw new Error('Invalid transaction hash provided');
         }
 
+        // Map chain name to domain ID
+        const domainMapping: Record<string, number> = {
+            'ethereum': this.isTestnet ? 0 : 0,
+            'arbitrum': this.isTestnet ? 3 : 3,
+            'base': this.isTestnet ? 6 : 6,
+            'world': 0 // Default to 0 for world chain
+        };
+
+        const sourceDomain = domainMapping[chainSource.toLowerCase()] ?? 0;
         const url = `${this.getBaseUrl()}/${sourceDomain}?transactionHash=${transactionHash}`;
 
         try {
@@ -46,7 +55,10 @@ export class RetrieveService {
             // Vérifie si l’attestation est complète
             if (response.data && response.data.messages[0].status === "complete") {
                 return {
-                    status: response.data.messages[0].status
+                    status: response.data.messages[0].status,
+                    message: response.data.messages[0].message,
+                    attestation: response.data.messages[0].attestation,
+                    eventNonce: response.data.messages[0].eventNonce
                 };
             } else {
                 console.log(`⏳ Attestation not ready yet`);
@@ -66,7 +78,5 @@ export class RetrieveService {
             throw new Error(`Failed to retrieve attestation: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
-
-
 
 }

@@ -34,6 +34,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/mongodb": "^4.0.7",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -42,7 +43,8 @@
     "lodash": "^4.17.21",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.1",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "viem": "^2.31.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
