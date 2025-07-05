@@ -93,186 +93,47 @@ router.get('/domains', (req: Request, res: Response): void => {
  * Retrieve CCTP attestation for a transaction (waits for completion)
  */
 router.get('/attestation/:transactionHash', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { transactionHash } = req.params;
-    const { sourceDomain, domain } = req.query;
+    try {
+        const { transactionHash } = req.params;
+        const { domain } = req.query;
 
-    // Validate transaction hash
-    if (!transactionHash || transactionHash.length < 10) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid transaction hash provided',
-        timestamp: new Date().toISOString()
-      } as AttestationResponse);
-      return;
+        if (!transactionHash || transactionHash.length < 10) {
+            res.status(400).json({
+                success: false,
+                error: 'Invalid transaction hash provided',
+                timestamp: new Date().toISOString()
+            } as AttestationResponse);
+            return;
+        }
+
+        console.log(`Retrieving attestation for transaction: ${transactionHash}, domain: ${domain}`);
+
+        const attestation = await retrieveService.retrieveAttestation(transactionHash, domain as string);
+
+        if (attestation) {
+            res.json({
+                success: true,
+                data: attestation,
+                timestamp: new Date().toISOString()
+            } as AttestationResponse);
+        } else {
+            res.status(404).json({
+                success: false,
+                error: 'Attestation not found or not ready yet',
+                timestamp: new Date().toISOString()
+            } as AttestationResponse);
+        }
+
+    } catch (error) {
+        console.error('Error retrieving attestation:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to retrieve attestation',
+            timestamp: new Date().toISOString()
+        } as AttestationResponse);
     }
-
-    // Determine source domain
-    const domainId = getDomainFromRequest(sourceDomain, domain);
-
-    console.log(`Retrieving attestation for transaction: ${transactionHash}, domain: ${domainId}`);
-
-    const attestation = await retrieveService.retrieveAttestation(transactionHash, domainId);
-
-    res.json({
-      success: true,
-      data: attestation,
-      timestamp: new Date().toISOString()
-    } as AttestationResponse);
-
-  } catch (error) {
-    console.error('Error retrieving attestation:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve attestation',
-      timestamp: new Date().toISOString()
-    } as AttestationResponse);
-  }
 });
 
-/**
- * GET /api/retrieve/status/:transactionHash
- * Get current attestation status without waiting for completion
- */
-router.get('/status/:transactionHash', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { transactionHash } = req.params;
-    const { sourceDomain, domain } = req.query;
 
-    // Validate transaction hash
-    if (!transactionHash || transactionHash.length < 10) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid transaction hash provided',
-        timestamp: new Date().toISOString()
-      } as AttestationResponse);
-      return;
-    }
-
-    // Determine source domain
-    const domainId = getDomainFromRequest(sourceDomain, domain);
-
-    console.log(`Getting attestation status for transaction: ${transactionHash}, domain: ${domainId}`);
-
-    const attestation = await retrieveService.getAttestationStatus(transactionHash, domainId);
-
-    if (attestation) {
-      res.json({
-        success: true,
-        data: attestation,
-        timestamp: new Date().toISOString()
-      } as AttestationResponse);
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Attestation not found or not ready yet',
-        timestamp: new Date().toISOString()
-      } as AttestationResponse);
-    }
-
-  } catch (error) {
-    console.error('Error getting attestation status:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to get attestation status',
-      timestamp: new Date().toISOString()
-    } as AttestationResponse);
-  }
-});
-
-/**
- * POST /api/retrieve/attestation
- * Retrieve CCTP attestation via POST request with JSON body
- */
-router.post('/attestation', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { transactionHash, sourceDomain }: AttestationRequest = req.body;
-
-    // Validate request body
-    if (!transactionHash || transactionHash.length < 10) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid transaction hash provided',
-        timestamp: new Date().toISOString()
-      } as AttestationResponse);
-      return;
-    }
-
-    const domainId = sourceDomain || 0; // Default to Ethereum Sepolia
-
-    console.log(`Retrieving attestation for transaction: ${transactionHash}, domain: ${domainId}`);
-
-    const attestation = await retrieveService.retrieveAttestation(transactionHash, domainId);
-
-    res.json({
-      success: true,
-      data: attestation,
-      timestamp: new Date().toISOString()
-    } as AttestationResponse);
-
-  } catch (error) {
-    console.error('Error retrieving attestation:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to retrieve attestation',
-      timestamp: new Date().toISOString()
-    } as AttestationResponse);
-  }
-});
-
-/**
- * GET /api/retrieve/test/:transactionHash
- * Test endpoint to see the raw response structure from Circle API
- */
-router.get('/test/:transactionHash', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { transactionHash } = req.params;
-    const { sourceDomain, domain } = req.query;
-
-    // Validate transaction hash
-    if (!transactionHash || transactionHash.length < 10) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid transaction hash provided'
-      });
-      return;
-    }
-
-    // Determine source domain
-    const domainId = getDomainFromRequest(sourceDomain, domain);
-    console.log(`Testing with domain: ${domainId}, transaction: ${transactionHash}`);
-
-    // Make direct API call to see raw response
-    const axios = require('axios');
-    const url = `https://iris-api-sandbox.circle.com/v2/messages/${domainId}?transactionHash=${transactionHash}`;
-    
-    const response = await axios.get(url, {
-      timeout: 30000,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-
-    res.json({
-      success: true,
-      message: 'Raw API response from Circle CCTP',
-      data: {
-        url: url,
-        status: response.status,
-        headers: response.headers,
-        rawResponse: response.data
-      }
-    });
-
-  } catch (error) {
-    console.error('Test API error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Test API call failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
 
 export default router;

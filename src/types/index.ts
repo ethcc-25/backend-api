@@ -114,12 +114,12 @@ export interface DecodedMessageBody {
 }
 
 export interface AttestationMessage {
-  message: string; // The hex-encoded message. 0x if the attestation is not yet available
-  eventNonce: string; // The nonce associated with the message
-  attestation: string; // The attestation. PENDING if the attestation is not yet available
-  decodedMessage: DecodedMessage | null; // Decoded representation of the message. Null or empty if decoding fails
-  decodedMessageBody: DecodedMessageBody | null; // Decoded representation of the message body. Null or empty if decoding fails or is not applicable
-  cctpVersion: number; // The CCTP version of the message
+  message?: string; // The hex-encoded message. 0x if the attestation is not yet available
+  eventNonce?: string; // The nonce associated with the message
+  attestation?: string; // The attestation. PENDING if the attestation is not yet available
+  decodedMessage?: DecodedMessage | null; // Decoded representation of the message. Null or empty if decoding fails
+  decodedMessageBody?: DecodedMessageBody | null; // Decoded representation of the message body. Null or empty if decoding fails or is not applicable
+  cctpVersion?: number; // The CCTP version of the message
   status: 'pending_confirmations' | string; // The status of the attestation
 }
 
