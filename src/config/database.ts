@@ -1,5 +1,6 @@
 import { MongoClient, ServerApiVersion, Db } from 'mongodb';
 import dotenv from 'dotenv';
+import os from 'os';
 
 dotenv.config();
 
@@ -16,27 +17,66 @@ const connectDB = async (): Promise<void> => {
       return;
     }
 
+    // Détecter si on est sur Ubuntu/Linux vs macOS
+    const isLinux = os.platform() === 'linux';
+    const isUbuntu = isLinux && os.release().includes('Ubuntu');
+    
+    console.log(`🔄 Connecting to MongoDB from ${os.platform()} (${os.release()})...`);
 
-    const uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc&ssl=true&tlsAllowInvalidCertificates=true`;
+    let uri: string;
+    let clientOptions: any;
 
-    // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-    client = new MongoClient(uri, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-      // Simplified connection options
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-      retryWrites: true,
-      retryReads: true,
-      // TLS options
-      tls: true,
-      tlsAllowInvalidCertificates: true,
-      tlsAllowInvalidHostnames: true
-    });
+    if (isLinux) {
+      // Configuration spécifique pour Ubuntu/Linux
+      uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&ssl=true&sslValidate=false&authSource=admin&tlsInsecure=true`;
+      
+      clientOptions = {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        },
+        // Timeouts plus longs pour Ubuntu
+        connectTimeoutMS: 60000,
+        socketTimeoutMS: 60000,
+        serverSelectionTimeoutMS: 60000,
+        maxPoolSize: 5,
+        retryWrites: true,
+        retryReads: true,
+        // SSL/TLS options pour Ubuntu - plus permissives
+        tls: true,
+        tlsInsecure: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true,
+        // Désactiver complètement la vérification SSL pour Ubuntu
+        checkServerIdentity: false,
+        minPoolSize: 0,
+        maxIdleTimeMS: 30000,
+        waitQueueTimeoutMS: 30000
+      };
+    } else {
+      // Configuration pour macOS/développement local
+      uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc&ssl=true&tlsAllowInvalidCertificates=true`;
+      
+      clientOptions = {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        },
+        connectTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        retryWrites: true,
+        retryReads: true,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true
+      };
+    }
+
+    // Create a MongoClient with environment-specific options
+    client = new MongoClient(uri, clientOptions);
     
     // Connect the client to the server
     await client.connect();
