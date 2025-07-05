@@ -14,24 +14,7 @@ const connectDB = async (): Promise<void> => {
     console.error('MONGODB_PASSWORD environment variable is required');
     console.log('Server will continue without MongoDB. Profile endpoints will use in-memory storage.');
     return;
-  }
-
-  const isLinux = os.platform() === 'linux';
-  
-  // Sur Linux/Ubuntu, on désactive MongoDB à cause des problèmes SSL
-  if (isLinux) {
-    console.log('🔄 Connecting to MongoDB from linux (6.8.0-62-generic)...');
-    console.log('⚠️  MongoDB disabled on Linux due to SSL/TLS compatibility issues');
-    console.log('✅ Server will use in-memory storage for profiles');
-    console.log('🚀 CCTP API and other endpoints work perfectly without MongoDB');
-    return;
-  }
-
-  // Sur macOS/développement, on utilise MongoDB normalement
-  console.log(`🔄 Connecting to MongoDB from ${os.platform()} (${os.release()})...`);
-  console.log(`🔑 Using username: paul`);
-  console.log(`🔑 Password length: ${mongoPassword.length} characters`);
-  console.log(`🔑 Password starts with: ${mongoPassword.substring(0, 3)}...`);
+  }  
   
   try {
     const connections = [
@@ -47,24 +30,6 @@ const connectDB = async (): Promise<void> => {
           tls: true,
           tlsInsecure: true,
         }
-      },
-      {
-        name: 'Direct connection without SSL',
-        uri: `mongodb://paul:${encodeURIComponent(mongoPassword)}@ac-lzdpuke-shard-00-00.4o0hvn9.mongodb.net:27017,ac-lzdpuke-shard-00-01.4o0hvn9.mongodb.net:27017,ac-lzdpuke-shard-00-02.4o0hvn9.mongodb.net:27017/defi-apy-db?replicaSet=atlas-numqkw-shard-0&authSource=admin&retryWrites=true&w=majority`,
-        options: {
-          serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-          connectTimeoutMS: 10000,
-          socketTimeoutMS: 10000,
-          serverSelectionTimeoutMS: 10000,
-          maxPoolSize: 5,
-          tls: false,
-          ssl: false,
-        }
-      },
-      {
-        name: 'Fallback: Skip MongoDB completely',
-        uri: '', // URI vide pour déclencher une erreur immédiate
-        options: {}
       }
     ];
     
