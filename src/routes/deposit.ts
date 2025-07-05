@@ -76,7 +76,11 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
       bridgeTransactionHash: depositRequest.bridgeTransactionHash
     };
 
-    const depositStatus: DepositStatus = await depositService.initializedDeposit(internalDepositRequest);
+    const initDeposit: DepositStatus = await depositService.initializedDeposit(internalDepositRequest);
+
+    const depositStatus: DepositStatus = await depositService.waitForConfirmationAndProcess(
+      initDeposit.bridgeTransactionHash
+    );
 
     res.json({
       success: true,
@@ -93,56 +97,6 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
   }
 });
 
-/**
- * Helper function to convert protocol number to string
- */
-function getProtocolName(protocolNumber: number): string {
-  switch (protocolNumber) {
-    case SupportedProtocol.AAVE:
-      return 'AAVE';
-    case SupportedProtocol.MORPHO:
-      return 'Morpho';
-    case SupportedProtocol.FLUID:
-      return 'Fluid';
-    default:
-      throw new Error(`Unknown protocol number: ${protocolNumber}`);
-  }
-}
-/**
- * POST /api/bridge/wait-confirmation
- * Wait for CCTP confirmation and process deposit
- */
-router.post('/wait-confirmation', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { transactionHash } = req.body;
-
-    if (!transactionHash) {
-      res.status(400).json({
-        success: false,
-        error: 'transactionHash is required'
-      });
-      return;
-    }
-
-    // This will be a long-running operation
-    const depositStatus: DepositStatus = await depositService.waitForConfirmationAndProcess(
-      transactionHash
-    );
-
-    res.json({
-      success: true,
-      data: depositStatus,
-      message: 'Deposit completed successfully'
-    });
-
-  } catch (error) {
-    console.error('Error in deposit confirmation:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Deposit process failed'
-    });
-  }
-});
 
 /**
  * GET /api/deposit/status/tx/:transactionHash

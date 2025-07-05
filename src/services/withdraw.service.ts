@@ -216,6 +216,7 @@ export class WithdrawService {
 
       // Update with found position
       withdrawStatus = await this.updateWithdrawStatus(undefined, {
+        userAddress:  userAddress,
         position: positionResult.position,
         srcChainDomain: positionResult.chainDomain,
         status: 'position_found'
