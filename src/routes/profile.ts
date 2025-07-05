@@ -87,6 +87,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       const collection = db.collection('profiles');
       const now = new Date();
       
+      console.log('POST /api/profile - Input data:', { user_address, positions });
+      
       const result = await collection.findOneAndUpdate(
         { user_address },
         {
@@ -104,6 +106,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
           returnDocument: 'after' 
         }
       );
+
+      console.log('POST /api/profile - MongoDB result:', result);
 
       res.json({
         success: true,
