@@ -68,7 +68,7 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
       userWallet: depositRequest.userWallet,
       amount: depositRequest.amount,
       opportunity: {
-        protocol: getProtocolName(depositRequest.opportunity.protocol),
+        protocol: depositRequest.opportunity.protocol,
         apy: 0, // Will be filled later
         chainId: depositRequest.opportunity.chainId,
         poolAddress: depositRequest.opportunity.poolAddress

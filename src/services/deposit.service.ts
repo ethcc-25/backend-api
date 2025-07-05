@@ -14,7 +14,7 @@ interface InternalDepositRequest {
   userWallet: string;
   amount: string;
   opportunity: {
-    protocol: string;
+    protocol: number;
     apy: number;
     chainId: number;
     poolAddress: string;
@@ -146,8 +146,7 @@ export class DepositService {
     const depositStatus = await this.updateDepositStatus(undefined, {
       ...request,
       opportunity: {
-        ...request.opportunity,
-        protocol: Number(request.opportunity.protocol)
+        ...request.opportunity
       },
       status: 'pending_attestation'
     });
