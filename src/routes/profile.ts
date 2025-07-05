@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { getDatabase } from '../config/database';
+import Profile from '../models/Profile';
 
 const router: Router = Router();
 
-// Temporary in-memory storage for when MongoDB is not available
+// Temporary in-memory storage fallback
 let profiles: any[] = [];
 
 // Simple interface for ProfileData
@@ -21,34 +21,26 @@ interface ProfileData {
 // @access  Public
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const db = getDatabase();
+    // Try MongoDB first
+    const mongoProfiles = await Profile.find({}).sort({ createdAt: -1 });
     
-    if (db) {
-      // Use MongoDB
-      const collection = db.collection('profiles');
-      const profiles = await collection.find({}).sort({ createdAt: -1 }).toArray();
-      
-      res.json({
-        success: true,
-        data: profiles,
-        count: profiles.length,
-        source: 'MongoDB'
-      });
-    } else {
-      // Use in-memory storage
-      res.json({
-        success: true,
-        data: profiles,
-        count: profiles.length,
-        source: 'In-memory storage',
-        message: 'MongoDB not connected - using temporary storage'
-      });
-    }
+    res.json({
+      success: true,
+      data: mongoProfiles.map(p => ({
+        ...p.toObject()
+      })),
+      count: mongoProfiles.length,
+      source: 'MongoDB'
+    });
   } catch (error) {
-    console.error('Error fetching profiles:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error'
+    // Fallback to in-memory storage
+    console.log('Using in-memory storage for profiles');
+    res.json({
+      success: true,
+      data: profiles,
+      count: profiles.length,
+      source: 'In-memory storage',
+      message: 'MongoDB not available - using temporary storage'
     });
   }
 });
@@ -80,40 +72,50 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    const db = getDatabase();
-    
-    if (db) {
-      // Use MongoDB
-      const collection = db.collection('profiles');
-      const now = new Date();
-      
-      console.log('POST /api/profile - Input data:', { user_address, positions });
-      
-      const result = await collection.findOneAndUpdate(
+    try {
+      // Try MongoDB first
+      const result = await Profile.findOneAndUpdate(
+
         { user_address },
-        {
-          $set: {
-            user_address,
-            positions,
-            updatedAt: now
-          },
-          $setOnInsert: {
-            createdAt: now
-          }
-        },
-        { 
-          upsert: true, 
-          returnDocument: 'after' 
-        }
+        { user_address, positions },
+        { upsert: true, new: true }
       );
 
       console.log('POST /api/profile - MongoDB result:', result);
 
       res.json({
         success: true,
-        data: result,
+        data: {
+          ...result.toObject()
+        },
         source: 'MongoDB'
       });
+
+    } catch (error) {
+      // Fallback to in-memory storage
+      console.log('Using in-memory storage for profile creation');
+      const existingIndex = profiles.findIndex(p => p.user_address === user_address);
+      const profileData = {
+        _id: Date.now().toString(),
+        user_address,
+        positions,
+        createdAt: existingIndex === -1 ? new Date().toISOString() : profiles[existingIndex].createdAt,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (existingIndex >= 0) {
+        profiles[existingIndex] = { ...profiles[existingIndex], ...profileData };
+      } else {
+        profiles.push(profileData);
+      }
+
+      res.json({
+        success: true,
+        data: profileData,
+        source: 'In-memory storage',
+        message: 'MongoDB not available - using temporary storage'
+      });
+
     }
   } catch (error) {
     console.error('Error creating/updating profile:', error);
@@ -130,12 +132,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 router.get('/:user_address', async (req: Request, res: Response): Promise<void> => {
   try {
     const { user_address } = req.params;
-    const db = getDatabase();
 
-    if (db) {
-      // Use MongoDB
-      const collection = db.collection('profiles');
-      const profile = await collection.findOne({ user_address });
+    try {
+      // Try MongoDB first
+      const profile = await Profile.findOne({ user_address });
 
       if (!profile) {
         res.status(404).json({
@@ -147,11 +147,14 @@ router.get('/:user_address', async (req: Request, res: Response): Promise<void> 
 
       res.json({
         success: true,
-        data: profile,
+        data: {
+          ...profile.toObject()
+        },
         source: 'MongoDB'
       });
-    } else {
-      // Use in-memory storage
+    } catch (error) {
+      // Fallback to in-memory storage
+      console.log('Using in-memory storage for profile retrieval');
       const profile = profiles.find(p => p.user_address === user_address);
 
       if (!profile) {
@@ -166,7 +169,7 @@ router.get('/:user_address', async (req: Request, res: Response): Promise<void> 
         success: true,
         data: profile,
         source: 'In-memory storage',
-        message: 'MongoDB not connected - using temporary storage'
+        message: 'MongoDB not available - using temporary storage'
       });
     }
   } catch (error) {
@@ -184,12 +187,10 @@ router.get('/:user_address', async (req: Request, res: Response): Promise<void> 
 router.delete('/:user_address', async (req: Request, res: Response): Promise<void> => {
   try {
     const { user_address } = req.params;
-    const db = getDatabase();
 
-    if (db) {
-      // Use MongoDB
-      const collection = db.collection('profiles');
-      const result = await collection.deleteOne({ user_address });
+    try {
+      // Try MongoDB first
+      const result = await Profile.deleteOne({ user_address });
 
       if (result.deletedCount === 0) {
         res.status(404).json({
@@ -204,8 +205,9 @@ router.delete('/:user_address', async (req: Request, res: Response): Promise<voi
         message: 'Profile deleted successfully',
         source: 'MongoDB'
       });
-    } else {
-      // Use in-memory storage
+    } catch (error) {
+      // Fallback to in-memory storage
+      console.log('Using in-memory storage for profile deletion');
       const profileIndex = profiles.findIndex(p => p.user_address === user_address);
 
       if (profileIndex === -1) {
@@ -222,7 +224,7 @@ router.delete('/:user_address', async (req: Request, res: Response): Promise<voi
         success: true,
         message: 'Profile deleted successfully',
         source: 'In-memory storage',
-        note: 'MongoDB not connected - using temporary storage'
+        note: 'MongoDB not available - using temporary storage'
       });
     }
   } catch (error) {
@@ -234,4 +236,4 @@ router.delete('/:user_address', async (req: Request, res: Response): Promise<voi
   }
 });
 
-export default router; 
+export default router;

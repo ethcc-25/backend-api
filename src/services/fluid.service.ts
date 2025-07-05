@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { FluidData, PoolData } from '../types';
 import { cache } from '../utils/cache';
-import { getChainConfig, getSupportedChains } from '../config/chains';
+import { getChainConfig, getSupportedChainsForProtocol } from '../config/chains';
 
 export class FluidService {
   async getFluidApy(chainName: string): Promise<FluidData> {
@@ -82,7 +82,7 @@ export class FluidService {
   }
 
   async getAllChainsData(): Promise<FluidData[]> {
-    const supportedChains = getSupportedChains();
+    const supportedChains = getSupportedChainsForProtocol('fluid');
     const results: FluidData[] = [];
 
     for (const chainName of supportedChains) {
@@ -106,4 +106,4 @@ export class FluidService {
 
     return results;
   }
-} 
+}

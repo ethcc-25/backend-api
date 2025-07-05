@@ -114,12 +114,12 @@ export interface DecodedMessageBody {
 }
 
 export interface AttestationMessage {
-  message: string; // The hex-encoded message. 0x if the attestation is not yet available
-  eventNonce: string; // The nonce associated with the message
-  attestation: string; // The attestation. PENDING if the attestation is not yet available
-  decodedMessage: DecodedMessage | null; // Decoded representation of the message. Null or empty if decoding fails
-  decodedMessageBody: DecodedMessageBody | null; // Decoded representation of the message body. Null or empty if decoding fails or is not applicable
-  cctpVersion: number; // The CCTP version of the message
+  message?: string; // The hex-encoded message. 0x if the attestation is not yet available
+  eventNonce?: string; // The nonce associated with the message
+  attestation?: string; // The attestation. PENDING if the attestation is not yet available
+  decodedMessage?: DecodedMessage | null; // Decoded representation of the message. Null or empty if decoding fails
+  decodedMessageBody?: DecodedMessageBody | null; // Decoded representation of the message body. Null or empty if decoding fails or is not applicable
+  cctpVersion?: number; // The CCTP version of the message
   status: 'pending_confirmations' | string; // The status of the attestation
 }
 
@@ -130,4 +130,46 @@ export interface AttestationRequest {
 
 export interface AttestationResponse extends ApiResponse<AttestationMessage> {
   data?: AttestationMessage;
-} 
+}
+
+// Bridge Flow Types
+export interface BridgeOpportunity {
+  protocol: string;
+  apy: number;
+  chain: string;
+  chainId: number;
+  poolAddress?: string;
+  poolName?: string;
+  symbol?: string;
+  poolApy?: number;
+  rewardsApy?: number;
+  tvl?: number;
+  tokens?: Token[];
+  additionalData?: any;
+}
+
+export interface BridgeRequest {
+  chainSource: string;
+  chainDest: string;
+  userWallet: string;
+  amount: string;
+  opportunity: BridgeOpportunity;
+  transactionHash?: string;
+}
+
+export interface BridgeStatus {
+  _id: string;
+  chainSource: string;
+  chainDest: string;
+  userWallet: string;
+  amount: string;
+  opportunity: BridgeOpportunity;
+  transactionHash?: string;
+  status: 'pending_attestation' | 'attestation_received' | 'processing_deposit' | 'deposit_confirmed' | 'completed' | 'failed';
+  attestationMessage?: string;
+  attestation?: string;
+  depositTxHash?: string;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

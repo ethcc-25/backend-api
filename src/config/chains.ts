@@ -115,4 +115,13 @@ export const getChainConfig = (chainName: string): ChainConfig | undefined => {
 
 export const getChainById = (chainId: number): ChainConfig | undefined => {
   return Object.values(CHAIN_CONFIGS).find(config => config.chainId === chainId);
-}; 
+};
+
+/**
+ * Get supported chains for a specific protocol
+ */
+export const getSupportedChainsForProtocol = (protocol: 'aave' | 'fluid' | 'morpho'): string[] => {
+  return Object.entries(CHAIN_CONFIGS)
+    .filter(([_, config]) => config.contracts[protocol])
+    .map(([chainName, _]) => chainName);
+};

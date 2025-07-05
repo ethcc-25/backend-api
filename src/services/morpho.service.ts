@@ -1,6 +1,6 @@
 import { MorphoData, PoolData } from '../types';
 import { cache } from '../utils/cache';
-import { getChainConfig, getSupportedChains } from '../config/chains';
+import { getChainConfig, getSupportedChainsForProtocol } from '../config/chains';
 import axios from 'axios';
 
 export class MorphoService {
@@ -168,7 +168,7 @@ export class MorphoService {
   }
 
   async getAllChainsData(): Promise<MorphoData[]> {
-    const supportedChains = getSupportedChains();
+    const supportedChains = getSupportedChainsForProtocol('morpho');
     const results: MorphoData[] = [];
 
     for (const chainName of supportedChains) {
@@ -192,4 +192,4 @@ export class MorphoService {
 
     return results;
   }
-} 
+}
