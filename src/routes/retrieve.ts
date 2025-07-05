@@ -29,21 +29,82 @@ function getDomainFromRequest(sourceDomain: any, domain: any): number {
 }
 
 /**
+ * GET /api/retrieve/
+ * API information endpoint - MUST BE FIRST
+ */
+router.get('/', (req: Request, res: Response): void => {
+  res.json({
+    success: true,
+    data: {
+      name: 'CCTP Attestation API',
+      description: 'API for retrieving CCTP attestations for cross-chain USDC transfers',
+      endpoints: {
+        'GET /api/retrieve/attestation/:transactionHash': {
+          description: 'Retrieve CCTP attestation (waits for completion)',
+          query_params: {
+            sourceDomain: 'number - Source domain ID (optional, defaults to 0)',
+            domain: 'string - Domain name (optional, e.g. "ethereum-sepolia")'
+          }
+        },
+        'GET /api/retrieve/status/:transactionHash': {
+          description: 'Get current attestation status (no waiting)',
+          query_params: {
+            sourceDomain: 'number - Source domain ID (optional, defaults to 0)',
+            domain: 'string - Domain name (optional, e.g. "ethereum-sepolia")'
+          }
+        },
+        'POST /api/retrieve/attestation': {
+          description: 'Retrieve CCTP attestation via POST request',
+          body: {
+            transactionHash: 'string - Transaction hash (required)',
+            sourceDomain: 'number - Source domain ID (optional, defaults to 0)'
+          }
+        },
+        'GET /api/retrieve/domains': {
+          description: 'Get supported domain mappings'
+        },
+        'GET /api/retrieve/test/:transactionHash': {
+          description: 'Test endpoint to see raw Circle API response'
+        }
+      },
+      supported_domains: getSupportedDomains()
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * GET /api/retrieve/domains
+ * Get supported domain mappings
+ */
+router.get('/domains', (req: Request, res: Response): void => {
+  res.json({
+    success: true,
+    data: {
+      domains: getSupportedDomains(),
+      description: 'Supported CCTP domain mappings for different chains'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * GET /api/retrieve/attestation/:transactionHash
  * Retrieve CCTP attestation for a transaction (waits for completion)
  */
-router.get('/attestation/:transactionHash', async (req: Request, res: Response) => {
+router.get('/attestation/:transactionHash', async (req: Request, res: Response): Promise<void> => {
   try {
     const { transactionHash } = req.params;
     const { sourceDomain, domain } = req.query;
 
     // Validate transaction hash
     if (!transactionHash || transactionHash.length < 10) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Invalid transaction hash provided',
         timestamp: new Date().toISOString()
       } as AttestationResponse);
+      return;
     }
 
     // Determine source domain
@@ -73,18 +134,19 @@ router.get('/attestation/:transactionHash', async (req: Request, res: Response) 
  * GET /api/retrieve/status/:transactionHash
  * Get current attestation status without waiting for completion
  */
-router.get('/status/:transactionHash', async (req: Request, res: Response) => {
+router.get('/status/:transactionHash', async (req: Request, res: Response): Promise<void> => {
   try {
     const { transactionHash } = req.params;
     const { sourceDomain, domain } = req.query;
 
     // Validate transaction hash
     if (!transactionHash || transactionHash.length < 10) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Invalid transaction hash provided',
         timestamp: new Date().toISOString()
       } as AttestationResponse);
+      return;
     }
 
     // Determine source domain
@@ -122,17 +184,18 @@ router.get('/status/:transactionHash', async (req: Request, res: Response) => {
  * POST /api/retrieve/attestation
  * Retrieve CCTP attestation via POST request with JSON body
  */
-router.post('/attestation', async (req: Request, res: Response) => {
+router.post('/attestation', async (req: Request, res: Response): Promise<void> => {
   try {
     const { transactionHash, sourceDomain }: AttestationRequest = req.body;
 
     // Validate request body
     if (!transactionHash || transactionHash.length < 10) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Invalid transaction hash provided',
         timestamp: new Date().toISOString()
       } as AttestationResponse);
+      return;
     }
 
     const domainId = sourceDomain || 0; // Default to Ethereum Sepolia
@@ -158,35 +221,21 @@ router.post('/attestation', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/retrieve/domains
- * Get supported domain mappings
- */
-router.get('/domains', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: {
-      domains: getSupportedDomains(),
-      description: 'Supported CCTP domain mappings for different chains'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
-
-/**
  * GET /api/retrieve/test/:transactionHash
  * Test endpoint to see the raw response structure from Circle API
  */
-router.get('/test/:transactionHash', async (req: Request, res: Response) => {
+router.get('/test/:transactionHash', async (req: Request, res: Response): Promise<void> => {
   try {
     const { transactionHash } = req.params;
     const { sourceDomain, domain } = req.query;
 
     // Validate transaction hash
     if (!transactionHash || transactionHash.length < 10) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Invalid transaction hash provided'
       });
+      return;
     }
 
     // Determine source domain
@@ -224,48 +273,6 @@ router.get('/test/:transactionHash', async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-});
-
-/**
- * GET /api/retrieve/
- * API information endpoint
- */
-router.get('/', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: {
-      name: 'CCTP Attestation API',
-      description: 'API for retrieving CCTP attestations for cross-chain USDC transfers',
-      endpoints: {
-        'GET /api/retrieve/attestation/:transactionHash': {
-          description: 'Retrieve CCTP attestation (waits for completion)',
-          query_params: {
-            sourceDomain: 'number - Source domain ID (optional, defaults to 0)',
-            domain: 'string - Domain name (optional, e.g. "ethereum-sepolia")'
-          }
-        },
-        'GET /api/retrieve/status/:transactionHash': {
-          description: 'Get current attestation status (no waiting)',
-          query_params: {
-            sourceDomain: 'number - Source domain ID (optional, defaults to 0)',
-            domain: 'string - Domain name (optional, e.g. "ethereum-sepolia")'
-          }
-        },
-        'POST /api/retrieve/attestation': {
-          description: 'Retrieve CCTP attestation via POST request',
-          body: {
-            transactionHash: 'string - Transaction hash (required)',
-            sourceDomain: 'number - Source domain ID (optional, defaults to 0)'
-          }
-        },
-        'GET /api/retrieve/domains': {
-          description: 'Get supported domain mappings'
-        }
-      },
-      supported_domains: getSupportedDomains()
-    },
-    timestamp: new Date().toISOString()
-  });
 });
 
 export default router;

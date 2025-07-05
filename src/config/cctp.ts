@@ -40,85 +40,32 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     name: 'Polygon Amoy',
     description: 'Polygon testnet',
     testnet: true
-  },
-  // Mainnet domains
-  'ethereum': {
-    domain: 0,
-    name: 'Ethereum',
-    description: 'Ethereum mainnet',
-    testnet: false
-  },
-  'avalanche': {
-    domain: 1,
-    name: 'Avalanche',
-    description: 'Avalanche mainnet',
-    testnet: false
-  },
-  'arbitrum': {
-    domain: 3,
-    name: 'Arbitrum',
-    description: 'Arbitrum mainnet',
-    testnet: false
-  },
-  'base': {
-    domain: 6,
-    name: 'Base',
-    description: 'Base mainnet',
-    testnet: false
-  },
-  'polygon': {
-    domain: 7,
-    name: 'Polygon',
-    description: 'Polygon mainnet',
-    testnet: false
-  }
-};
-
-export const CCTP_API_URLS = {
-  testnet: 'https://iris-api-sandbox.circle.com/v2/messages',
-  mainnet: 'https://iris-api.circle.com/v2/messages'
-};
-
-export const CCTP_CONTRACT_ADDRESSES = {
-  testnet: {
-    ethereum: {
-      usdc: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238',
-      tokenMessenger: '0x8fe6b999dc680ccfdd5bf7eb0974218be2542daa'
-    },
-    avalanche: {
-      messageTransmitter: '0xe737e5cebeeba77efe34d4aa090756590b1ce275'
-    }
-  },
-  mainnet: {
-    // TODO: Add mainnet addresses when needed
   }
 };
 
 /**
- * Get domain ID by chain name
+ * Get domain ID from chain name
  */
 export function getDomainId(chainName: string): number {
-  const config = CCTP_DOMAINS[chainName];
-  if (!config) {
+  const domain = CCTP_DOMAINS[chainName.toLowerCase()];
+  if (!domain) {
     throw new Error(`Unsupported chain: ${chainName}`);
   }
-  return config.domain;
+  return domain.domain;
 }
 
 /**
- * Get API URL based on environment
+ * Get supported domains list
+ */
+export function getSupportedDomains(): { [key: string]: CCTPDomainConfig } {
+  return CCTP_DOMAINS;
+}
+
+/**
+ * Get API URL for CCTP
  */
 export function getApiUrl(isTestnet: boolean = true): string {
-  return isTestnet ? CCTP_API_URLS.testnet : CCTP_API_URLS.mainnet;
-}
-
-/**
- * Get all supported domain mappings
- */
-export function getSupportedDomains(): { [key: string]: number } {
-  const domains: { [key: string]: number } = {};
-  for (const [chainName, config] of Object.entries(CCTP_DOMAINS)) {
-    domains[chainName] = config.domain;
-  }
-  return domains;
+  return isTestnet 
+    ? 'https://iris-api-sandbox.circle.com/v2/messages'
+    : 'https://iris-api.circle.com/v2/messages';
 } 

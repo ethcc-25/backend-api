@@ -10,6 +10,7 @@ import { cache } from './utils/cache';
 dotenv.config();
 
 // Connect to MongoDB
+console.log('Connecting to MongoDB...');
 connectDB();
 
 const app = express();

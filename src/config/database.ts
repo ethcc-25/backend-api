@@ -16,7 +16,8 @@ const connectDB = async (): Promise<void> => {
       return;
     }
 
-    const uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc`;
+
+    const uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc&ssl=true&tlsAllowInvalidCertificates=true`;
 
     // Create a MongoClient with a MongoClientOptions object to set the Stable API version
     client = new MongoClient(uri, {
@@ -24,10 +25,18 @@ const connectDB = async (): Promise<void> => {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
-      }
+      },
+      // Simplified connection options
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      retryReads: true,
+      // TLS options
+      tls: true,
+      tlsAllowInvalidCertificates: true,
+      tlsAllowInvalidHostnames: true
     });
-
-    console.log('Attempting to connect to MongoDB...');
     
     // Connect the client to the server
     await client.connect();
