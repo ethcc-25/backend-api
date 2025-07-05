@@ -21,11 +21,50 @@ const connectDB = async (): Promise<void> => {
   console.log(`🔑 Using username: paul`);
   console.log(`🔑 Password length: ${mongoPassword.length} characters`);
   console.log(`🔑 Password starts with: ${mongoPassword.substring(0, 3)}...`);
+  
+  // Vérifier l'adresse IP publique du serveur
+  try {
+    const axios = require('axios');
+    const response = await axios.get('https://api.ipify.org?format=json', { timeout: 5000 });
+    console.log(`🌐 Server public IP: ${response.data.ip}`);
+    console.log(`💡 Make sure this IP is whitelisted in MongoDB Atlas Network Access`);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(`⚠️  Could not fetch public IP: ${errorMessage}`);
+  }
 
   // Configurations à tester dans l'ordre
   const configs = [
     {
-      name: 'Standard SSL with URL encoding',
+      name: 'MongoDB Atlas Standard URI (Recommended)',
+      uri: `mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc`,
+      options: {
+        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
+        maxPoolSize: 5,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true,
+      }
+    },
+    {
+      name: 'MongoDB Atlas with Database specified',
+      uri: `mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc`,
+      options: {
+        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
+        maxPoolSize: 5,
+        tls: true,
+        tlsAllowInvalidCertificates: true,
+        tlsAllowInvalidHostnames: true,
+      }
+    },
+    {
+      name: 'MongoDB Atlas with authSource=admin',
       uri: `mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
       options: {
         serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
@@ -39,8 +78,8 @@ const connectDB = async (): Promise<void> => {
       }
     },
     {
-      name: 'Standard SSL without URL encoding',
-      uri: `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
+      name: 'MongoDB Atlas without SSL validation',
+      uri: `mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/?retryWrites=true&w=majority&appName=eth-cc`,
       options: {
         serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
         connectTimeoutMS: 10000,
@@ -48,26 +87,7 @@ const connectDB = async (): Promise<void> => {
         serverSelectionTimeoutMS: 10000,
         maxPoolSize: 5,
         tls: true,
-        tlsAllowInvalidCertificates: true,
-        tlsAllowInvalidHostnames: true,
-      }
-    },
-    {
-      name: 'Explicit auth with credentials',
-      uri: `mongodb+srv://eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&authSource=admin`,
-      options: {
-        auth: {
-          username: 'paul',
-          password: mongoPassword
-        },
-        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 10000,
-        serverSelectionTimeoutMS: 10000,
-        maxPoolSize: 5,
-        tls: true,
-        tlsAllowInvalidCertificates: true,
-        tlsAllowInvalidHostnames: true,
+        tlsInsecure: true,
       }
     }
   ];
