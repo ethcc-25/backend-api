@@ -134,9 +134,8 @@ export interface AttestationResponse extends ApiResponse<AttestationMessage> {
 
 // Bridge Flow Types
 export interface DepositOpportunity {
-  protocol: string;
+  protocol: number;
   apy: number;
-  chain: string;
   chainId: number;
   poolAddress?: string;
   poolName?: string;
@@ -149,11 +148,15 @@ export interface DepositOpportunity {
 }
 
 export interface DepositRequest {
-  srcChainDomain: number;
-  dstChainDomain: number;
+  srcChainId: number;
+  destChainId: number;
   userWallet: string;
   amount: string;
-  opportunity: DepositOpportunity;
+  opportunity: {
+    chainId: number;
+    protocol: number;
+    poolAddress: string;
+  };
   bridgeTransactionHash: string;
 }
 
