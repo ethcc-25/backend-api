@@ -8,10 +8,6 @@ export interface ContractConfig {
 }
 
 export const YIELD_MANAGER_CONTRACTS: Record<string, ContractConfig> = {
-  'ethereum': {
-    address: process.env.YIELD_MANAGER_ETHEREUM || '0x0000000000000000000000000000000000000000',
-    chainId: 1
-  },
   'arbitrum': {
     address: process.env.YIELD_MANAGER_ARBITRUM || '0x0000000000000000000000000000000000000000',
     chainId: 42161

@@ -20,33 +20,23 @@ export class RetrieveService {
     /**
      * Retrieve CCTP attestation for a given transaction hash
      * @param transactionHash - The transaction hash from the burn transaction
-     * @param chainSource - The source chain name
+     * @param sourceDomain - The source chain domain ID
      * @returns Promise<AttestationMessage> - The attestation message
      */
     async retrieveAttestation(
         transactionHash: string,
-        chainSource: string
+        sourceDomain: number
     ): Promise<AttestationMessage | null> {
-        console.log(`Retrieving attestation for transaction: ${transactionHash} from chain: ${chainSource}`);
+        console.log(`Retrieving attestation for transaction: ${transactionHash} from domain: ${sourceDomain}`);
 
         if (!transactionHash || transactionHash.length < 10) {
             throw new Error('Invalid transaction hash provided');
         }
 
-        // Validate chainSource parameter
-        if (!chainSource) {
-            throw new Error('Chain source parameter is required');
+        // Validate sourceDomain parameter
+        if (typeof sourceDomain !== 'number') {
+            throw new Error('Source domain must be a number');
         }
-
-        const domainMapping: Record<string, number> = {
-            'ethereum': this.isTestnet ? 0 : 0,
-            'arbitrum': this.isTestnet ? 3 : 3,
-            'base': this.isTestnet ? 6 : 6,
-            'world': 0 // Default to 0 for world chain
-        };
-
-        const sourceDomain = domainMapping[chainSource.toLowerCase()] ?? 0;
-        
 
         const url = `${this.getBaseUrl()}/${sourceDomain}?transactionHash=${transactionHash}`;
 
