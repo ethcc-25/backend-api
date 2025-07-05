@@ -3,10 +3,24 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet, arbitrum, base, worldchain } from 'viem/chains';
 import DepositStatus from '../models/DepositStatus';
 import { RetrieveService } from './retrieve';
-import { DepositRequest, DepositStatus as IDepositStatus } from '../types';
+import { DepositStatus as IDepositStatus } from '../types';
 import { getYieldManagerContract, YIELD_MANAGER_ABI } from '../config/contracts';
 import { getChainConfig } from '../config/chains';
 
+// Internal deposit request interface (uses domains)
+interface InternalDepositRequest {
+  srcChainDomain: number;
+  dstChainDomain: number;
+  userWallet: string;
+  amount: string;
+  opportunity: {
+    protocol: string;
+    apy: number;
+    chainId: number;
+    poolAddress: string;
+  };
+  bridgeTransactionHash: string;
+}
 export class DepositService {
   private retrieveService: RetrieveService;
   private privateKey: string;
@@ -128,9 +142,13 @@ export class DepositService {
   /**
    * Initialize deposit request
    */
-  async initializedDeposit(request: DepositRequest): Promise<IDepositStatus> {
+  async initializedDeposit(request: InternalDepositRequest): Promise<IDepositStatus> {
     const depositStatus = await this.updateDepositStatus(undefined, {
       ...request,
+      opportunity: {
+        ...request.opportunity,
+        protocol: Number(request.opportunity.protocol)
+      },
       status: 'pending_attestation'
     });
 

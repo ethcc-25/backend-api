@@ -88,3 +88,42 @@ export const getSupportedChainsForProtocol = (protocol: 'aave' | 'fluid' | 'morp
     .filter(([_, config]) => config.contracts[protocol])
     .map(([chainName, _]) => chainName);
 };
+/**
+ * Map chainId to CCTP domain ID
+ */
+export const getChainDomainMapping = (): Record<number, number> => {
+  return {
+    1: 0,     // Ethereum → Domain 0
+    42161: 3, // Arbitrum → Domain 3
+    8453: 6,  // Base → Domain 6
+    480: 14   // World → Domain 14
+  };
+};
+
+/**
+ * Get CCTP domain ID from chain ID
+ */
+export const getDomainFromChainId = (chainId: number): number => {
+  const mapping = getChainDomainMapping();
+  const domain = mapping[chainId];
+  
+  if (domain === undefined) {
+    throw new Error(`Unsupported chainId: ${chainId}. Supported chains: ${Object.keys(mapping).join(', ')}`);
+  }
+  
+  return domain;
+};
+
+/**
+ * Get chain ID from CCTP domain ID
+ */
+export const getChainIdFromDomain = (domain: number): number => {
+  const mapping = getChainDomainMapping();
+  const chainId = Object.keys(mapping).find(key => mapping[parseInt(key)] === domain);
+  
+  if (!chainId) {
+    throw new Error(`Unsupported domain: ${domain}. Supported domains: ${Object.values(mapping).join(', ')}`);
+  }
+  
+  return parseInt(chainId);
+};
