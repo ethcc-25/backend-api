@@ -88,7 +88,7 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     }
   },
   world: {
-    chainId: 480,
+    chainId: 4,
     name: 'World',
     rpcUrl: 'https://world-rpc.example.com',
     contracts: {

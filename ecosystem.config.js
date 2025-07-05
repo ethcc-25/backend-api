@@ -12,7 +12,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || '',
+        MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || ''  ,
       },
       env_development: {
         NODE_ENV: 'development',

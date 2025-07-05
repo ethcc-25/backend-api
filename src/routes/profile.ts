@@ -75,10 +75,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
       // Try MongoDB first
       const result = await Profile.findOneAndUpdate(
+
         { user_address },
         { user_address, positions },
         { upsert: true, new: true }
       );
+
+      console.log('POST /api/profile - MongoDB result:', result);
 
       res.json({
         success: true,
@@ -87,6 +90,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         },
         source: 'MongoDB'
       });
+
     } catch (error) {
       // Fallback to in-memory storage
       console.log('Using in-memory storage for profile creation');
@@ -111,6 +115,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         source: 'In-memory storage',
         message: 'MongoDB not available - using temporary storage'
       });
+
     }
   } catch (error) {
     console.error('Error creating/updating profile:', error);

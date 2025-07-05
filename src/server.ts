@@ -149,7 +149,6 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
   
   console.log(`📡 API documentation available at http://0.0.0.0:${PORT}/`);
   console.log(`📊 MongoDB profiles API available at http://0.0.0.0:${PORT}/api/profile`);
-  console.log(`🌐 Server accessible from external IPs on port ${PORT}`);
 });
 
 export default server; 
