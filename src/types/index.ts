@@ -149,8 +149,8 @@ export interface DepositOpportunity {
 }
 
 export interface DepositRequest {
-  chainSource: string;
-  chainDest: string;
+  srcChainDomain: number;
+  dstChainDomain: number;
   userWallet: string;
   amount: string;
   opportunity: DepositOpportunity;
@@ -159,8 +159,8 @@ export interface DepositRequest {
 
 export interface DepositStatus {
   _id: string;
-  chainSource: string;
-  chainDest:  string;
+  srcChainDomain: number;
+  dstChainDomain: number;
   userWallet: string;
   amount: string;
   opportunity: DepositOpportunity;

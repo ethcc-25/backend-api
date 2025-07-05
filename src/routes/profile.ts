@@ -13,6 +13,7 @@ interface ProfileData {
     chain: string;
     apy: number;
     protocol: string;
+    poolAddress: string;
   }>;
 }
 
@@ -63,10 +64,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     // Validate positions structure
     for (const position of positions) {
-      if (!position.chain || typeof position.apy !== 'number' || !position.protocol) {
+      if (!position.chain || typeof position.apy !== 'number' || !position.protocol || !position.poolAddress) {
         res.status(400).json({
           success: false,
-          error: 'Each position must have chain, apy (number), and protocol'
+          error: 'Each position must have chain, apy (number), protocol, and poolAddress'
         });
         return;
       }

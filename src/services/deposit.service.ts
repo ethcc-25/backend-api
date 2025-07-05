@@ -126,6 +126,24 @@ export class DepositService {
   }
 
   /**
+   * Get chain name from domain ID
+   */
+  private getChainNameFromDomain(domain: number): string {
+    switch (domain) {
+      case 0:
+        return 'ethereum';
+      case 2:
+        return 'optimism';
+      case 3:
+        return 'arbitrum';
+      case 6:
+        return 'base';
+      default:
+        throw new Error(`Unsupported chain domain: ${domain}`);
+    }
+  }
+
+  /**
    * Wait for CCTP attestation and process deposit
    */
   async waitForConfirmationAndProcess(
@@ -147,6 +165,9 @@ export class DepositService {
 
       console.log(`Waiting for attestation for transaction: ${transactionHash}`);
 
+      // Convert domain to chain name for attestation retrieval
+      const sourceChainName = this.getChainNameFromDomain(depositStatus.srcChainDomain);
+
       // Poll for attestation (max 10 minutes)
       const maxAttempts = 60; // 10 minutes with 10-second intervals
       let attempts = 0;
@@ -156,7 +177,7 @@ export class DepositService {
         try {
           attestationData = await this.retrieveService.retrieveAttestation(
             transactionHash,
-            depositStatus.chainSource
+            sourceChainName
           );
 
           if (attestationData && attestationData.status === 'complete') {
@@ -189,8 +210,9 @@ export class DepositService {
       });
 
       // Process deposit on destination chain
+      const destChainName = this.getChainNameFromDomain(depositStatus.dstChainDomain);
       const depositTxHash = await this.processDeposit(
-        depositStatus.chainDest,
+        destChainName,
         attestationData.message!,
         attestationData.attestation!
       );

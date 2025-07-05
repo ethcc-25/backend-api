@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { DepositService } from '../services/deposit.service';
-import { DepositRequest, DepositStatus } from '../types';
+import { DepositRequest, DepositStatus, SupportedChainDomain } from '../types';
 
 const router: Router = Router();
 const depositService = new DepositService();
@@ -14,12 +14,23 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
     const depositRequest: DepositRequest = req.body;
 
     // Validation
-    if (!depositRequest.chainSource || !depositRequest.chainDest || 
+    if (typeof depositRequest.srcChainDomain !== 'number' || typeof depositRequest.dstChainDomain !== 'number' || 
         !depositRequest.userWallet || !depositRequest.amount || 
         !depositRequest.opportunity) {
       res.status(400).json({
         success: false,
-        error: 'Missing required fields: chainSource, chainDest, userWallet, amount, opportunity'
+        error: 'Missing required fields: srcChainDomain (number), dstChainDomain (number), userWallet, amount, opportunity'
+      });
+      return;
+    }
+
+    // Validate domain values are supported
+    const supportedDomains = Object.values(SupportedChainDomain);
+    if (!supportedDomains.includes(depositRequest.srcChainDomain) || 
+        !supportedDomains.includes(depositRequest.dstChainDomain)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid chain domains. Supported domains: ${supportedDomains.join(', ')}`
       });
       return;
     }
