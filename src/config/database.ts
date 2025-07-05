@@ -5,8 +5,8 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
-    const mongoPassword = process.env.MONGODB_PASSWORD!;
-    await mongoose.connect(`mongodb+srv://paul:${encodeURIComponent(mongoPassword)}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc`);
+    const mongoURI = process.env.MONGO_URI;
+    await mongoose.connect(mongoURI as string);
     console.log('✅ Connected to MongoDB via Mongoose');
   } catch (error) {
     console.error('❌ Database connection error:', error);

@@ -4,6 +4,7 @@ export interface Position {
   chain: string;
   apy: number;
   protocol: string;
+  poolAddress: string;
 }
 
 export interface ProfileData {
@@ -30,6 +31,10 @@ const profileSchema = new Schema<IProfile>({
       required: true 
     },
     protocol: { 
+      type: String, 
+      required: true 
+    },
+    poolAddress: { 
       type: String, 
       required: true 
     }

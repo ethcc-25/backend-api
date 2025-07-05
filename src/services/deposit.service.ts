@@ -1,6 +1,6 @@
 import { createWalletClient, http, parseAbi, getContract, publicActions } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet, arbitrum, base } from 'viem/chains';
+import { mainnet, arbitrum, base, worldchain } from 'viem/chains';
 import DepositStatus from '../models/DepositStatus';
 import { RetrieveService } from './retrieve';
 import { DepositRequest, DepositStatus as IDepositStatus } from '../types';
@@ -32,17 +32,7 @@ export class DepositService {
       case 'base':
         return base;
       case 'world':
-        // For World chain, we'll use a custom chain config
-        return {
-          id: 480,
-          name: 'World',
-          network: 'world',
-          nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-          rpcUrls: {
-            default: { http: ['https://world-rpc.example.com'] },
-            public: { http: ['https://world-rpc.example.com'] }
-          }
-        };
+        return worldchain;
       default:
         throw new Error(`Unsupported chain: ${chainName}`);
     }
@@ -114,6 +104,28 @@ export class DepositService {
   }
 
   /**
+   * Get deposit status by transaction hash
+   */
+  async getStatusByTransactionHash(transactionHash: string): Promise<IDepositStatus | null> {
+    try {
+      // Try MongoDB first
+      const status = await DepositStatus.findOne({ bridgeTransactionHash: transactionHash });
+      
+      if (!status) {
+        return null;
+      }
+      
+      return {
+        ...status.toObject(),
+        _id: status._id.toString()
+      } as unknown as IDepositStatus;
+    } catch (error) {
+      console.error('Error getting deposit status by transaction hash:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize deposit request
    */
   async initializedDeposit(request: DepositRequest): Promise<IDepositStatus> {
@@ -126,26 +138,47 @@ export class DepositService {
   }
 
   /**
+   * Get chain name from domain ID
+   */
+  private getChainNameFromDomain(domain: number): string {
+    switch (domain) {
+      case 0:
+        return 'ethereum';
+      case 2:
+        return 'optimism';
+      case 3:
+        return 'arbitrum';
+      case 6:
+        return 'base';
+      case 14:
+        return 'world';
+      default:
+        throw new Error(`Unsupported chain domain: ${domain}`);
+    }
+  }
+
+  /**
    * Wait for CCTP attestation and process deposit
    */
   async waitForConfirmationAndProcess(
-    bridgeId: string,
     transactionHash: string
   ): Promise<IDepositStatus> {
-    let depositStatus = await this.getStatusDeposit(bridgeId);
+    let depositStatus = await this.getStatusByTransactionHash(transactionHash);
     
     if (!depositStatus) {
-      throw new Error('Deposit status not found');
+      throw new Error('Deposit status not found for transaction hash');
     }
 
     try {
-      // Update with transaction hash
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         bridgeTransactionHash: transactionHash,
         status: 'pending_attestation'
       });
 
       console.log(`Waiting for attestation for transaction: ${transactionHash}`);
+
+      // Convert domain to chain name for attestation retrieval
+      const sourceChainName = this.getChainNameFromDomain(depositStatus.srcChainDomain);
 
       // Poll for attestation (max 10 minutes)
       const maxAttempts = 60; // 10 minutes with 10-second intervals
@@ -156,7 +189,7 @@ export class DepositService {
         try {
           attestationData = await this.retrieveService.retrieveAttestation(
             transactionHash,
-            depositStatus.chainSource
+            sourceChainName
           );
 
           if (attestationData && attestationData.status === 'complete') {
@@ -174,35 +207,35 @@ export class DepositService {
       }
 
       if (!attestationData || attestationData.status !== 'complete') {
-        depositStatus = await this.updateDepositStatus(bridgeId, {
+        depositStatus = await this.updateDepositStatus(depositStatus._id, {
           status: 'failed',
           errorMessage: 'Attestation timeout or not found'
         });
         throw new Error('Attestation timeout or not found');
       }
-
       // Update status with attestation received
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'attestation_received',
         attestationMessage: attestationData.message,
         attestation: attestationData.attestation
       });
 
       // Process deposit on destination chain
+      const destChainName = this.getChainNameFromDomain(depositStatus.dstChainDomain);
       const depositTxHash = await this.processDeposit(
-        depositStatus.chainDest,
+        destChainName,
         attestationData.message!,
         attestationData.attestation!
       );
 
       // Update status with deposit processing
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'deposit_confirmed',
         depositTxHash
       });
 
       // Final status update
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'completed'
       });
 
@@ -212,7 +245,7 @@ export class DepositService {
       console.error('Error in bridge process:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'failed',
         errorMessage
       });

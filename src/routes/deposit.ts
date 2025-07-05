@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { DepositService } from '../services/deposit.service';
-import { DepositRequest, DepositStatus } from '../types';
+import { DepositRequest, DepositStatus, SupportedChainDomain } from '../types';
 
 const router: Router = Router();
 const depositService = new DepositService();
@@ -14,12 +14,23 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
     const depositRequest: DepositRequest = req.body;
 
     // Validation
-    if (!depositRequest.chainSource || !depositRequest.chainDest || 
+    if (typeof depositRequest.srcChainDomain !== 'number' || typeof depositRequest.dstChainDomain !== 'number' || 
         !depositRequest.userWallet || !depositRequest.amount || 
         !depositRequest.opportunity) {
       res.status(400).json({
         success: false,
-        error: 'Missing required fields: chainSource, chainDest, userWallet, amount, opportunity'
+        error: 'Missing required fields: srcChainDomain (number), dstChainDomain (number), userWallet, amount, opportunity'
+      });
+      return;
+    }
+
+    // Validate domain values are supported
+    const supportedDomains = Object.values(SupportedChainDomain);
+    if (!supportedDomains.includes(depositRequest.srcChainDomain) || 
+        !supportedDomains.includes(depositRequest.dstChainDomain)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid chain domains. Supported domains: ${supportedDomains.join(', ')}`
       });
       return;
     }
@@ -47,19 +58,18 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
  */
 router.post('/wait-confirmation', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { bridgeId, transactionHash } = req.body;
+    const { transactionHash } = req.body;
 
-    if (!bridgeId || !transactionHash) {
+    if (!transactionHash) {
       res.status(400).json({
         success: false,
-        error: 'bridgeId and transactionHash are required'
+        error: 'transactionHash is required'
       });
       return;
     }
 
     // This will be a long-running operation
     const depositStatus: DepositStatus = await depositService.waitForConfirmationAndProcess(
-      bridgeId,
       transactionHash
     );
 
@@ -70,7 +80,7 @@ router.post('/wait-confirmation', async (req: Request, res: Response): Promise<v
     });
 
   } catch (error) {
-    console.error('Error in bridge confirmation:', error);
+    console.error('Error in deposit confirmation:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Deposit process failed'
@@ -78,6 +88,43 @@ router.post('/wait-confirmation', async (req: Request, res: Response): Promise<v
   }
 });
 
+/**
+ * GET /api/deposit/status/tx/:transactionHash
+ * Get deposit status by transaction hash
+ */
+router.get('/status/tx/:transactionHash', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { transactionHash } = req.params;
 
+    if (!transactionHash) {
+      res.status(400).json({
+        success: false,
+        error: 'Transaction hash is required'
+      });
+      return;
+    }
+
+    const depositStatus = await depositService.getStatusByTransactionHash(transactionHash);
+
+    if (!depositStatus) {
+      res.status(404).json({
+        success: false,
+        error: 'Deposit status not found for this transaction hash'
+      });
+      return;
+    }
+    res.json({
+      success: true,
+      data: depositStatus,
+      message: 'Deposit status retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting deposit status:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get deposit status'
+    });
+  }
+});
 
 export default router;

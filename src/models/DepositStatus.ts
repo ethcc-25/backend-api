@@ -8,13 +8,13 @@ export interface IDepositStatusDocument extends Omit<IDepositStatus, '_id' | 'cr
 }
 
 const depositStatusSchema = new Schema<IDepositStatusDocument>({
-  chainSource: {
-    type: String,
+  srcChainDomain: {
+    type: Number,
     required: true,
     index: true
   },
-  chainDest: {
-    type: String,
+  dstChainDomain: {
+    type: Number,
     required: true,
     index: true
   },
@@ -63,6 +63,7 @@ const depositStatusSchema = new Schema<IDepositStatusDocument>({
 // Index for efficient querying
 depositStatusSchema.index({ userWallet: 1, status: 1 });
 depositStatusSchema.index({ bridgeTransactionHash: 1 });
+depositStatusSchema.index({ bridgeTransactionHash: 1 }, { unique: true });
 depositStatusSchema.index({ createdAt: -1 });
 
 const DepositStatus = model<IDepositStatusDocument>('DepositStatus', depositStatusSchema);

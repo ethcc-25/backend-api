@@ -13,6 +13,7 @@ interface ProfileData {
     chain: string;
     apy: number;
     protocol: string;
+    poolAddress: string;
   }>;
 }
 
@@ -50,6 +51,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 // @access  Public
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
+
     const { user_address, positions }: ProfileData = req.body;
 
     // Validation
@@ -63,25 +65,23 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     // Validate positions structure
     for (const position of positions) {
-      if (!position.chain || typeof position.apy !== 'number' || !position.protocol) {
+      if (!position.chain || typeof position.apy !== 'number' || !position.protocol || !position.poolAddress) {
         res.status(400).json({
           success: false,
-          error: 'Each position must have chain, apy (number), and protocol'
+          error: 'Each position must have chain, apy (number), protocol, and poolAddress'
         });
         return;
       }
     }
 
     try {
+
       // Try MongoDB first
       const result = await Profile.findOneAndUpdate(
-
         { user_address },
         { user_address, positions },
         { upsert: true, new: true }
       );
-
-      console.log('POST /api/profile - MongoDB result:', result);
 
       res.json({
         success: true,

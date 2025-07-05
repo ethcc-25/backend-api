@@ -73,7 +73,7 @@ export interface CacheEntry<T> {
   ttl: number;
 }
 
-export type SupportedChains = 'ethereum' | 'arbitrum' | 'base';
+export type SupportedChains = 'ethereum' | 'arbitrum' | 'base' | 'world';
 export type SupportedProtocols = 'aave' | 'fluid' | 'morpho';
 
 export interface AllProtocolsData {
@@ -149,8 +149,8 @@ export interface DepositOpportunity {
 }
 
 export interface DepositRequest {
-  chainSource: string;
-  chainDest: string;
+  srcChainDomain: number;
+  dstChainDomain: number;
   userWallet: string;
   amount: string;
   opportunity: DepositOpportunity;
@@ -159,8 +159,8 @@ export interface DepositRequest {
 
 export interface DepositStatus {
   _id: string;
-  chainSource: string;
-  chainDest:  string;
+  srcChainDomain: number;
+  dstChainDomain: number;
   userWallet: string;
   amount: string;
   opportunity: DepositOpportunity;
@@ -184,6 +184,6 @@ export enum SupportedChainDomain {
   ETHEREUM = 0,
   OPTIMISM = 2,
   ARBITRUM = 3,
-  BASE = 6,
-  WORLDCHAIN = 14,
+  BASE     = 6,
+  WORLD    = 14
 }

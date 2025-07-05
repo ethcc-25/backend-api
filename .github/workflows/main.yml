@@ -14,9 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Git pull
-        run: git pull origin master
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,9 +30,9 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "NODE_ENV"=${{ vars.NODE_ENV }}" > .env
-          echo "MONGODB_PASSWORD"=${{ vars.MONGODB_PASSWORD }}" >> .env
+          echo "MONGO_URI=${{ vars.MONGO_URI }}" >> .env
           echo "PORT"=3000 >> .env
+          echo "NODE_ENV=production" >> .env
 
       - name: Build server
         run: npm run build
