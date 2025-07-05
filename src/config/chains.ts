@@ -1,37 +1,37 @@
 import { ChainConfig } from '../types';
 
 export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
-  ethereum: {
-    chainId: 1,
-    name: 'Ethereum',
-    rpcUrl: process.env.ETHEREUM_RPC_URL || 'https://ethereum-rpc.publicnode.com',
-    contracts: {
-      aave: {
-        poolAddress: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
-        usdcAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' // USDC on Ethereum
-      },
-      fluid: {
-        apiUrl: 'https://api.fluid.instadapp.io/v2/lending/1/users/0x0000000000000000000000000000000000000000/positions'
-      },
-      morpho: {
-        apiUrl: 'https://api.morpho.org/graphql',
-        pools: [
-          {
-            address: '0xd63070114470f685b75B74D60EEc7c1113d33a3D',
-            name: 'Mev Capital USDC',
-          },
-          {
-            address: '0x0F359FD18BDa75e9c49bC027E7da59a4b01BF32a',
-            name: 'Relend USDC'
-          },
-          {
-            address: '0xBEeFFF209270748ddd194831b3fa287a5386f5bC',
-            name: 'Smokehouse USDC'
-          }
-        ]
-      }
-    }
-  },
+  // ethereum: {
+  //   chainId: 1,
+  //   name: 'Ethereum',
+  //   rpcUrl: process.env.ETHEREUM_RPC_URL || 'https://ethereum-rpc.publicnode.com',
+  //   contracts: {
+  //     aave: {
+  //       poolAddress: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', // Aave V3 Pool
+  //       usdcAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' // USDC on Ethereum
+  //     },
+  //     fluid: {
+  //       apiUrl: 'https://api.fluid.instadapp.io/v2/lending/1/users/0x0000000000000000000000000000000000000000/positions'
+  //     },
+  //     morpho: {
+  //       apiUrl: 'https://api.morpho.org/graphql',
+  //       pools: [
+  //         {
+  //           address: '0xd63070114470f685b75B74D60EEc7c1113d33a3D',
+  //           name: 'Mev Capital USDC',
+  //         },
+  //         {
+  //           address: '0x0F359FD18BDa75e9c49bC027E7da59a4b01BF32a',
+  //           name: 'Relend USDC'
+  //         },
+  //         {
+  //           address: '0xBEeFFF209270748ddd194831b3fa287a5386f5bC',
+  //           name: 'Smokehouse USDC'
+  //         }
+  //       ]
+  //     }
+  //   }
+  // },
   arbitrum: {
     chainId: 42161,
     name: 'Arbitrum',

@@ -35,8 +35,7 @@ const depositStatusSchema = new Schema<IDepositStatusDocument>({
     additionalData: { type: Schema.Types.Mixed }
   },
   bridgeTransactionHash: {
-    type: String,
-    index: true
+    type: String
   },
   status: {
     type: String,

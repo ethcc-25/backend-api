@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import routes from './routes';
 import profileRoutes from './routes/profile';
 import retrieveRoutes from './routes/retrieve';
-import bridgeRoutes from './routes/bridge';
+import depositRoutes from './routes/deposit';
 import connectDB from './config/database';
 import { cache } from './utils/cache';
 
@@ -57,7 +57,7 @@ app.use(rateLimiter);
 app.use('/api', routes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/retrieve', retrieveRoutes);
-app.use('/api/bridge', bridgeRoutes);
+app.use('/api/deposit', depositRoutes);
 
 // Root endpoint with API documentation
 app.get('/', (req, res) => {

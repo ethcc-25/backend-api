@@ -160,7 +160,7 @@ export interface DepositRequest {
 export interface DepositStatus {
   _id: string;
   chainSource: string;
-  chainDest: string;
+  chainDest:  string;
   userWallet: string;
   amount: string;
   opportunity: DepositOpportunity;

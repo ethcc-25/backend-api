@@ -7,10 +7,6 @@ import { DepositRequest, DepositStatus as IDepositStatus } from '../types';
 import { getYieldManagerContract, YIELD_MANAGER_ABI } from '../config/contracts';
 import { getChainConfig } from '../config/chains';
 
-// In-memory storage fallback
-let depositStatusStorage: Array<IDepositStatus & { _id: string }> = [];
-let nextId = 1;
-
 export class DepositService {
   private retrieveService: RetrieveService;
   private privateKey: string;
@@ -112,12 +108,11 @@ export class DepositService {
         _id: status._id.toString()
       } as unknown as IDepositStatus;
     } catch (error) {
-      // Fallback to in-memory storage
-      const status = depositStatusStorage.find(item => item._id === id);
-      return status || null;
+      console.error('Error getting deposit status:', error);
+      throw error;
     }
   }
-  
+
   /**
    * Initialize deposit request
    */
@@ -301,25 +296,4 @@ export class DepositService {
     }
   }
 
-  /**
-   * Get user deposit history
-   */
-  async getUserDepositHistory(userWallet: string): Promise<IDepositStatus[]> {
-    try {
-      // Try MongoDB first
-      const history = await DepositStatus
-        .find({ userWallet })
-        .sort({ createdAt: -1 });
-      
-      return history.map(item => ({
-        ...item.toObject(),
-        _id: item._id.toString()
-      })) as unknown as IDepositStatus[];
-    } catch (error) {
-      // Fallback to in-memory storage
-      return depositStatusStorage
-        .filter(item => item.userWallet === userWallet)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-  }
 }
