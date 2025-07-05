@@ -113,18 +113,20 @@ router.get('/best-opportunity', async (req, res) => {
       });
     });
 
+    console.log(allPools);
+
     // Find the best opportunity (highest combinedApy)
     let bestOpportunity = null;
     let maxApy = 0;
 
     allPools.forEach(({ protocol, chain, chainId, pool }) => {
-      if (pool.combinedApy > maxApy) {
-        maxApy = pool.combinedApy;
+      if (pool.apy > maxApy) {
+        maxApy = pool.apy;
         bestOpportunity = {
           protocol,
           chain,
           chainId,
-          apy: pool.combinedApy,
+          apy: pool.apy,
           poolApy: pool.poolApy,
           rewardsApy: pool.rewardsApy,
           tvl: pool.tvl,

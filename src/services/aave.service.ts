@@ -106,9 +106,9 @@ export class AaveService {
         pools: [{
           symbol: 'USDC',
           name: 'USDC',
-          poolApy: parseFloat(poolApy),
+          apy: parseFloat(poolApy),
+          poolApy: combinedApy,
           rewardsApy: 0,
-          combinedApy: combinedApy,
           tvl: tvl,
           tokens: [{
             symbol: 'USDC',

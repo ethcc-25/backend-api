@@ -58,8 +58,8 @@ export class MorphoService {
         return {
           symbol: 'USDC',
           name: pool.name,
+          apy: randomApy,
           poolApy: randomApy,
-          combinedApy: randomApy,
           rewardsApy: 0,
           tvl: randomTvl,
           tokens: [{
@@ -130,8 +130,8 @@ export class MorphoService {
             return {
               symbol: 'USDC',
               name: pool.name,
-              poolApy: apy,
-              combinedApy: netApy,
+              apy: apy,
+              poolApy: netApy,
               rewardsApy: 0,
               tvl: vault.liquidity.usd,
               tokens: [{

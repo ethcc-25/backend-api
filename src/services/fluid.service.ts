@@ -51,9 +51,9 @@ export class FluidService {
         return {
           symbol: token.asset.symbol,
           name: token.name,
+          apy: Number(token.supplyRate) / 100,
           poolApy: Number(token.supplyRate) / 100,
-          rewardsApy: Number(token.rewardsRate) / 100,
-          combinedApy: Number(token.totalRate) / 100,
+          rewardsApy: 0,
           tvl: Number(token.totalAssets) / 1e6,
           tokens: [{
             symbol: token.asset.symbol,

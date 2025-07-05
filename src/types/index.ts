@@ -10,9 +10,9 @@ export interface Token {
 export interface PoolData {
   symbol: string;
   name?: string;
+  apy: number;
   poolApy: number;
   rewardsApy: number;
-  combinedApy: number;
   tvl: number;
   tokens: Token[];
   chain_id: number;
