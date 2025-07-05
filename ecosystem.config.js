@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'defi-apy-server',
+      name: 'monde-api',
       script: 'src/server.ts',
       interpreter: 'node',
       interpreter_args: '-r ts-node/register',
