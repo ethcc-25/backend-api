@@ -143,6 +143,14 @@ export class DepositService {
    * Initialize deposit request
    */
   async initializedDeposit(request: InternalDepositRequest): Promise<IDepositStatus> {
+
+    const existingStatus = await this.getStatusByTransactionHash(request.bridgeTransactionHash);
+
+    if (existingStatus) {
+      // If deposit already exists, return existing status
+      return existingStatus;
+    }
+
     const depositStatus = await this.updateDepositStatus(undefined, {
       ...request,
       opportunity: {
