@@ -222,6 +222,8 @@ export class DepositService {
         throw new Error('Attestation timeout or not found');
       }
 
+      console.log(`Attestation received: ${attestationData}`);
+
       // Update status with attestation received
       depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'attestation_received',
