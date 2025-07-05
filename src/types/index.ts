@@ -185,4 +185,5 @@ export enum SupportedChainDomain {
   OPTIMISM = 2,
   ARBITRUM = 3,
   BASE = 6,
+  WORLDCHAIN = 14,
 }
