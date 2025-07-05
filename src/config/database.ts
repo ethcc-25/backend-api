@@ -36,10 +36,10 @@ const connectDB = async (): Promise<void> => {
           strict: true,
           deprecationErrors: true,
         },
-        // Timeouts plus longs pour Ubuntu
-        connectTimeoutMS: 60000,
-        socketTimeoutMS: 60000,
-        serverSelectionTimeoutMS: 60000,
+        // Timeouts réduits pour Ubuntu
+        connectTimeoutMS: 10000, // 10 secondes
+        socketTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 10000,
         maxPoolSize: 5,
         retryWrites: true,
         retryReads: true,
@@ -48,8 +48,8 @@ const connectDB = async (): Promise<void> => {
         tlsAllowInvalidCertificates: true,
         tlsAllowInvalidHostnames: true,
         minPoolSize: 0,
-        maxIdleTimeMS: 30000,
-        waitQueueTimeoutMS: 30000
+        maxIdleTimeMS: 10000,
+        waitQueueTimeoutMS: 10000
       };
     } else {
       // Configuration pour macOS/développement local
@@ -75,11 +75,25 @@ const connectDB = async (): Promise<void> => {
     // Create a MongoClient with environment-specific options
     client = new MongoClient(uri, clientOptions);
     
+    // Ajouter un timeout global pour la connexion
+    const connectionTimeout = setTimeout(() => {
+      console.error('❌ MongoDB connection timeout after 15 seconds');
+      console.log('Server will continue without MongoDB. Profile endpoints will use in-memory storage.');
+      if (client) {
+        client.close().catch(console.error);
+        client = null;
+        database = null;
+      }
+    }, 15000);
+
     // Connect the client to the server
     await client.connect();
     
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
+    
+    // Clear the timeout if connection succeeds
+    clearTimeout(connectionTimeout);
     
     // Set the database
     database = client.db("defi-apy-db");
@@ -87,7 +101,7 @@ const connectDB = async (): Promise<void> => {
     console.log("✅ Successfully connected to MongoDB!");
     
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error);
     console.log('Server will continue without MongoDB. Profile endpoints will use in-memory storage.');
     
     // Clean up on error
