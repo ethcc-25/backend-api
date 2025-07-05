@@ -33,6 +33,10 @@ jobs:
           echo "MONGO_URI=${{ vars.MONGO_URI }}" >> .env
           echo "PORT"=3000 >> .env
           echo "NODE_ENV=production" >> .env
+          ecno "PRIVATE_KEY=${{ vars.PRIVATE_KEY }}" >> .env
+          echo "YIELD_MANAGER_BASE=${{ vars.YIELD_MANAGER_BASE }}" >> .env
+          echo "YIELD_MANAGER_ARBITRUM=${{ vars.YIELD_MANAGER_ARBITRUM }}" >> .env
+          echo "YIELD_MANAGER_WORLD=${{ vars.YIELD_MANAGER_WORLD }}" >> .env
 
       - name: Build server
         run: npm run build

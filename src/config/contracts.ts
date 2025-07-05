@@ -8,6 +8,10 @@ export interface ContractConfig {
 }
 
 export const YIELD_MANAGER_CONTRACTS: Record<string, ContractConfig> = {
+  'ethereum': {
+    address: process.env.YIELD_MANAGER_ETHEREUM || '0x0000000000000000000000000000000000000000',
+    chainId: 1
+  },
   'arbitrum': {
     address: process.env.YIELD_MANAGER_ARBITRUM || '0x0000000000000000000000000000000000000000',
     chainId: 42161
@@ -42,6 +46,70 @@ export const YIELD_MANAGER_ABI = [
       }
     ],
     "name": "processDeposit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "positions",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "pool",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "positionId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountUsdc",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "initWithdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "processWithdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

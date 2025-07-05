@@ -190,3 +190,34 @@ export enum SupportedChainDomain {
   BASE     = 6,
   WORLD    = 14
 }
+
+// Withdraw types
+export interface Position {
+  pool: number;         // 1 Aave - 2 Morpho - 3 Fluid
+  positionId: string;   // bytes32 as hex string
+  user: string;         // address
+  amountUsdc: string;   // uint256 as string
+  shares: string;       // uint256 as string
+  vault: string;        // address
+}
+
+export interface WithdrawRequest {
+  userAddress: string;
+}
+
+export interface WithdrawStatus {
+  _id: string;
+  userAddress: string;
+  position: Position;
+  srcChainDomain: number;
+  dstChainDomain: number; // Always WORLD (14)
+  status: 'checking_position' | 'position_found' | 'initiating_withdraw' | 'withdraw_initiated' | 'pending_attestation' | 'attestation_received' | 'processing_withdraw' | 'completed' | 'failed';
+  initWithdrawTxHash?: string;
+  bridgeTransactionHash?: string;
+  attestationMessage?: string;
+  attestation?: string;
+  processWithdrawTxHash?: string;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

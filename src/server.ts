@@ -5,10 +5,10 @@ import routes from './routes';
 import profileRoutes from './routes/profile';
 import retrieveRoutes from './routes/retrieve';
 import depositRoutes from './routes/deposit';
+import withdrawRoutes from './routes/withdraw';
 import connectDB from './config/database';
 import { cache } from './utils/cache';
 
-// Chargement des variables d'environnement depuis .env
 dotenv.config();
 
 const app = express();
@@ -58,60 +58,8 @@ app.use('/api', routes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/retrieve', retrieveRoutes);
 app.use('/api/deposit', depositRoutes);
+app.use('/api/withdraw', withdrawRoutes);
 
-// Root endpoint with API documentation
-app.get('/', (req, res) => {
-  res.json({
-    name: 'DeFi APY Server',
-    version: '1.0.0',
-    description: 'A comprehensive DeFi APY aggregator supporting AAVE, Fluid, and Morpho protocols across multiple chains, with MongoDB profile management',
-    endpoints: {
-      health: 'GET /api/health - Health check',
-      chains: 'GET /api/chains - Get supported chains',
-      bestOpportunity: 'GET /api/best-opportunity - Get the best yield opportunity across all protocols and chains',
-      aave: {
-        all: 'GET /api/aave - Get AAVE data for all chains',
-        chain: 'GET /api/aave/:chain - Get AAVE data for specific chain'
-      },
-      fluid: {
-        all: 'GET /api/fluid - Get Fluid data for all chains',
-        chain: 'GET /api/fluid/:chain - Get Fluid data for specific chain'
-      },
-      morpho: {
-        all: 'GET /api/morpho - Get Morpho data for all chains',
-        chain: 'GET /api/morpho/:chain - Get Morpho data for specific chain'
-      },
-      cache: {
-        stats: 'GET /api/cache/stats - Get cache statistics',
-        clear: 'DELETE /api/cache - Clear cache'
-      },
-      profile: {
-        create: 'POST /api/profile - Create or update profile',
-        get: 'GET /api/profile/:user_address - Get profile',
-        getAll: 'GET /api/profile - Get all profiles',
-        delete: 'DELETE /api/profile/:user_address - Delete profile'
-      },
-      cctp: {
-        info: 'GET /api/retrieve - CCTP API information',
-        attestation: 'GET /api/retrieve/attestation/:transactionHash - Retrieve CCTP attestation (waits for completion)',
-        status: 'GET /api/retrieve/status/:transactionHash - Get current attestation status (no waiting)',
-        attestationPost: 'POST /api/retrieve/attestation - Retrieve CCTP attestation via POST request',
-        domains: 'GET /api/retrieve/domains - Get supported CCTP domain mappings',
-        test: 'GET /api/retrieve/test/:transactionHash - Test endpoint to see raw Circle API response'
-      },
-      bridge: {
-        info: 'GET /api/bridge - Bridge API information',
-        initialize: 'POST /api/bridge/initialize - Initialize bridge request',
-        waitConfirmation: 'POST /api/bridge/wait-confirmation - Wait for CCTP confirmation and process deposit',
-        status: 'GET /api/bridge/status/:id - Get bridge status by ID',
-        statusByTx: 'GET /api/bridge/status/tx/:txHash - Get bridge status by transaction hash',
-        history: 'GET /api/bridge/history/:userWallet - Get user bridge history'
-      }
-    },
-    supportedChains: ['ethereum', 'arbitrum', 'base'],
-    supportedProtocols: ['aave', 'fluid', 'morpho']
-  });
-});
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -144,12 +92,7 @@ process.on('SIGINT', gracefulShutdown);
 const server = app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 DeFi APY Server running on port ${PORT}`);
   
-  // Connect to MongoDB after server starts
-  console.log('Connecting to MongoDB...');
   connectDB();
-  
-  console.log(`📡 API documentation available at http://0.0.0.0:${PORT}/`);
-  console.log(`📊 MongoDB profiles API available at http://0.0.0.0:${PORT}/api/profile`);
 });
 
 export default server; 
