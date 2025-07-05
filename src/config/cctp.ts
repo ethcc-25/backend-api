@@ -17,11 +17,11 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     description: 'Ethereum testnet',
     testnet: true
   },
-  'avalanche-fuji': {
+  'ethereum': {
     domain: 1,
-    name: 'Avalanche Fuji',
-    description: 'Avalanche testnet',
-    testnet: true
+    name: 'Ethereum',
+    description: 'Ethereum',
+    testnet: false
   },
   'arbitrum-sepolia': {
     domain: 3,
@@ -29,18 +29,25 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     description: 'Arbitrum testnet',
     testnet: true
   },
+  'arbitrum': {
+    domain: 3,
+    name: 'Arbitrum',
+    description: 'Arbitrum',
+    testnet: false
+  },
   'base-sepolia': {
     domain: 6,
     name: 'Base Sepolia',
     description: 'Base testnet',
     testnet: true
   },
-  'polygon-amoy': {
-    domain: 7,
-    name: 'Polygon Amoy',
-    description: 'Polygon testnet',
-    testnet: true
-  }
+  'base': {
+    domain: 6,
+    name: 'Base',
+    description: 'Base',
+    testnet: false
+  },
+  
 };
 
 /**
