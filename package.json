@@ -8,6 +8,15 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "watch": "nodemon --exec ts-node src/server.ts",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:dev": "pm2 start ecosystem.config.js --env development",
+    "pm2:stop": "pm2 stop defi-apy-server",
+    "pm2:restart": "pm2 restart defi-apy-server",
+    "pm2:reload": "pm2 reload defi-apy-server",
+    "pm2:delete": "pm2 delete defi-apy-server",
+    "pm2:logs": "pm2 logs defi-apy-server",
+    "pm2:status": "pm2 status",
+    "pm2:monit": "pm2 monit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
