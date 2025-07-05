@@ -9,10 +9,11 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || ''  ,
+        MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || '',
       },
       env_development: {
         NODE_ENV: 'development',

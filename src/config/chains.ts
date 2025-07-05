@@ -43,12 +43,6 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
       },
       fluid: {
         apiUrl: 'https://api.fluid.instadapp.io/v2/lending/42161/users/0x0000000000000000000000000000000000000000/positions'
-      },
-      morpho: {
-        apiUrl: 'https://api.morpho.org/graphql',
-        pools: [
-          // Pas de pools USDC disponibles sur Arbitrum pour le moment
-        ]
       }
     }
   },
