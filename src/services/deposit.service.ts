@@ -1,17 +1,17 @@
 import { createWalletClient, http, parseAbi, getContract, publicActions } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { mainnet, arbitrum, base } from 'viem/chains';
-import BridgeStatus from '../models/BridgeStatus';
+import DepositStatus from '../models/DepositStatus';
 import { RetrieveService } from './retrieve';
-import { BridgeRequest, BridgeStatus as IBridgeStatus } from '../types';
+import { DepositRequest, DepositStatus as IDepositStatus } from '../types';
 import { getYieldManagerContract, YIELD_MANAGER_ABI } from '../config/contracts';
 import { getChainConfig } from '../config/chains';
 
 // In-memory storage fallback
-let bridgeStatusStorage: Array<IBridgeStatus & { _id: string }> = [];
+let depositStatusStorage: Array<IDepositStatus & { _id: string }> = [];
 let nextId = 1;
 
-export class BridgeService {
+export class DepositService {
   private retrieveService: RetrieveService;
   private privateKey: string;
 
@@ -53,82 +53,55 @@ export class BridgeService {
   }
 
   /**
-   * Create or update bridge status in database
+   * Create or update deposit status in database
    */
-  private async updateBridgeStatus(
+  private async updateDepositStatus(
     id: string | undefined,
-    updates: Partial<IBridgeStatus>
-  ): Promise<IBridgeStatus> {
+    updates: Partial<IDepositStatus>
+  ): Promise<IDepositStatus> {
     try {
       // Try MongoDB first
       if (id) {
-        const result = await BridgeStatus.findByIdAndUpdate(
+        const result = await DepositStatus.findByIdAndUpdate(
           id,
           { ...updates, updatedAt: new Date() },
           { new: true }
         );
         
         if (!result) {
-          throw new Error('Bridge status not found');
+          throw new Error('Deposit status not found');
         }
         
         return {
           ...result.toObject(),
           _id: result._id.toString()
-        } as IBridgeStatus;
+        } as unknown as IDepositStatus;
       } else {
-        const newBridgeStatus = new BridgeStatus({
+        const newDepositStatus = new DepositStatus({
           ...updates,
           createdAt: new Date(),
           updatedAt: new Date()
         });
         
-        const result = await newBridgeStatus.save();
+        const result = await newDepositStatus.save();
         return {
           ...result.toObject(),
           _id: result._id.toString()
-        } as IBridgeStatus;
+        } as unknown as IDepositStatus;
       }
     } catch (error) {
-      // Fallback to in-memory storage
-      console.log('Using in-memory storage for bridge status');
-      
-      if (id) {
-        const index = bridgeStatusStorage.findIndex(item => item._id === id);
-        if (index === -1) {
-          throw new Error('Bridge status not found');
-        }
-        
-        bridgeStatusStorage[index] = {
-          ...bridgeStatusStorage[index],
-          ...updates,
-          updatedAt: new Date()
-        } as IBridgeStatus & { _id: string };
-        
-        return bridgeStatusStorage[index];
-      } else {
-        const newStatus: IBridgeStatus & { _id: string } = {
-          ...updates,
-          _id: nextId.toString(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } as IBridgeStatus & { _id: string };
-        
-        bridgeStatusStorage.push(newStatus);
-        nextId++;
-        
-        return newStatus;
-      }
+      console.error('Error updating deposit status:', error);
+      throw error;
     }
   }
 
   /**
-   * Get bridge status by ID
+   * Get deposit status by ID
    */
-  async getBridgeStatus(id: string): Promise<IBridgeStatus | null> {
+  async getStatusDeposit(id: string): Promise<IDepositStatus | null> {
     try {
       // Try MongoDB first
-      const status = await BridgeStatus.findById(id);
+      const status = await DepositStatus.findById(id);
       
       if (!status) {
         return null;
@@ -137,47 +110,24 @@ export class BridgeService {
       return {
         ...status.toObject(),
         _id: status._id.toString()
-      } as IBridgeStatus;
+      } as unknown as IDepositStatus;
     } catch (error) {
       // Fallback to in-memory storage
-      const status = bridgeStatusStorage.find(item => item._id === id);
+      const status = depositStatusStorage.find(item => item._id === id);
       return status || null;
     }
   }
-
+  
   /**
-   * Get bridge status by transaction hash
+   * Initialize deposit request
    */
-  async getBridgeStatusByTxHash(txHash: string): Promise<IBridgeStatus | null> {
-    try {
-      // Try MongoDB first
-      const status = await BridgeStatus.findOne({ transactionHash: txHash });
-      
-      if (!status) {
-        return null;
-      }
-      
-      return {
-        ...status.toObject(),
-        _id: status._id.toString()
-      } as IBridgeStatus;
-    } catch (error) {
-      // Fallback to in-memory storage
-      const status = bridgeStatusStorage.find(item => item.transactionHash === txHash);
-      return status || null;
-    }
-  }
-
-  /**
-   * Initialize bridge request
-   */
-  async initializeBridge(request: BridgeRequest): Promise<IBridgeStatus> {
-    const bridgeStatus = await this.updateBridgeStatus(undefined, {
+  async initializedDeposit(request: DepositRequest): Promise<IDepositStatus> {
+    const depositStatus = await this.updateDepositStatus(undefined, {
       ...request,
       status: 'pending_attestation'
     });
 
-    return bridgeStatus;
+    return depositStatus;
   }
 
   /**
@@ -186,17 +136,17 @@ export class BridgeService {
   async waitForConfirmationAndProcess(
     bridgeId: string,
     transactionHash: string
-  ): Promise<IBridgeStatus> {
-    let bridgeStatus = await this.getBridgeStatus(bridgeId);
+  ): Promise<IDepositStatus> {
+    let depositStatus = await this.getStatusDeposit(bridgeId);
     
-    if (!bridgeStatus) {
-      throw new Error('Bridge status not found');
+    if (!depositStatus) {
+      throw new Error('Deposit status not found');
     }
 
     try {
       // Update with transaction hash
-      bridgeStatus = await this.updateBridgeStatus(bridgeId, {
-        transactionHash,
+      depositStatus = await this.updateDepositStatus(bridgeId, {
+        bridgeTransactionHash: transactionHash,
         status: 'pending_attestation'
       });
 
@@ -211,7 +161,7 @@ export class BridgeService {
         try {
           attestationData = await this.retrieveService.retrieveAttestation(
             transactionHash,
-            bridgeStatus.chainSource
+            depositStatus.chainSource
           );
 
           if (attestationData && attestationData.status === 'complete') {
@@ -229,7 +179,7 @@ export class BridgeService {
       }
 
       if (!attestationData || attestationData.status !== 'complete') {
-        bridgeStatus = await this.updateBridgeStatus(bridgeId, {
+        depositStatus = await this.updateDepositStatus(bridgeId, {
           status: 'failed',
           errorMessage: 'Attestation timeout or not found'
         });
@@ -237,7 +187,7 @@ export class BridgeService {
       }
 
       // Update status with attestation received
-      bridgeStatus = await this.updateBridgeStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(bridgeId, {
         status: 'attestation_received',
         attestationMessage: attestationData.message,
         attestation: attestationData.attestation
@@ -245,29 +195,29 @@ export class BridgeService {
 
       // Process deposit on destination chain
       const depositTxHash = await this.processDeposit(
-        bridgeStatus.chainDest,
+        depositStatus.chainDest,
         attestationData.message!,
         attestationData.attestation!
       );
 
       // Update status with deposit processing
-      bridgeStatus = await this.updateBridgeStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(bridgeId, {
         status: 'deposit_confirmed',
         depositTxHash
       });
 
       // Final status update
-      bridgeStatus = await this.updateBridgeStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(bridgeId, {
         status: 'completed'
       });
 
-      return bridgeStatus;
+      return depositStatus;
 
     } catch (error) {
       console.error('Error in bridge process:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      bridgeStatus = await this.updateBridgeStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(bridgeId, {
         status: 'failed',
         errorMessage
       });
@@ -352,22 +302,22 @@ export class BridgeService {
   }
 
   /**
-   * Get user bridge history
+   * Get user deposit history
    */
-  async getUserBridgeHistory(userWallet: string): Promise<IBridgeStatus[]> {
+  async getUserDepositHistory(userWallet: string): Promise<IDepositStatus[]> {
     try {
       // Try MongoDB first
-      const history = await BridgeStatus
+      const history = await DepositStatus
         .find({ userWallet })
         .sort({ createdAt: -1 });
       
       return history.map(item => ({
         ...item.toObject(),
         _id: item._id.toString()
-      })) as IBridgeStatus[];
+      })) as unknown as IDepositStatus[];
     } catch (error) {
       // Fallback to in-memory storage
-      return bridgeStatusStorage
+      return depositStatusStorage
         .filter(item => item.userWallet === userWallet)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }

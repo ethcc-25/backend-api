@@ -1,13 +1,13 @@
 import { Document, model, Schema, Types } from 'mongoose';
-import { BridgeStatus as IBridgeStatus } from '../types';
+import { DepositStatus as IDepositStatus } from '../types';
 
-export interface IBridgeStatusDocument extends Omit<IBridgeStatus, '_id' | 'createdAt' | 'updatedAt'>, Document {
+export interface IDepositStatusDocument extends Omit<IDepositStatus, '_id' | 'createdAt' | 'updatedAt'>, Document {
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const bridgeStatusSchema = new Schema<IBridgeStatusDocument>({
+const depositStatusSchema = new Schema<IDepositStatusDocument>({
   chainSource: {
     type: String,
     required: true,
@@ -34,7 +34,7 @@ const bridgeStatusSchema = new Schema<IBridgeStatusDocument>({
     poolAddress: { type: String },
     additionalData: { type: Schema.Types.Mixed }
   },
-  transactionHash: {
+  bridgeTransactionHash: {
     type: String,
     index: true
   },
@@ -62,10 +62,10 @@ const bridgeStatusSchema = new Schema<IBridgeStatusDocument>({
 });
 
 // Index for efficient querying
-bridgeStatusSchema.index({ userWallet: 1, status: 1 });
-bridgeStatusSchema.index({ transactionHash: 1 });
-bridgeStatusSchema.index({ createdAt: -1 });
+depositStatusSchema.index({ userWallet: 1, status: 1 });
+depositStatusSchema.index({ bridgeTransactionHash: 1 });
+depositStatusSchema.index({ createdAt: -1 });
 
-const BridgeStatus = model<IBridgeStatusDocument>('BridgeStatus', bridgeStatusSchema);
+const DepositStatus = model<IDepositStatusDocument>('DepositStatus', depositStatusSchema);
 
-export default BridgeStatus;
+export default DepositStatus;

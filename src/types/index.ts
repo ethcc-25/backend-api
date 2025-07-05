@@ -133,7 +133,7 @@ export interface AttestationResponse extends ApiResponse<AttestationMessage> {
 }
 
 // Bridge Flow Types
-export interface BridgeOpportunity {
+export interface DepositOpportunity {
   protocol: string;
   apy: number;
   chain: string;
@@ -148,23 +148,23 @@ export interface BridgeOpportunity {
   additionalData?: any;
 }
 
-export interface BridgeRequest {
+export interface DepositRequest {
   chainSource: string;
   chainDest: string;
   userWallet: string;
   amount: string;
-  opportunity: BridgeOpportunity;
-  transactionHash?: string;
+  opportunity: DepositOpportunity;
+  bridgeTransactionHash: string;
 }
 
-export interface BridgeStatus {
+export interface DepositStatus {
   _id: string;
   chainSource: string;
   chainDest: string;
   userWallet: string;
   amount: string;
-  opportunity: BridgeOpportunity;
-  transactionHash?: string;
+  opportunity: DepositOpportunity;
+  bridgeTransactionHash: string;
   status: 'pending_attestation' | 'attestation_received' | 'processing_deposit' | 'deposit_confirmed' | 'completed' | 'failed';
   attestationMessage?: string;
   attestation?: string;
