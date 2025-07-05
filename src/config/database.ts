@@ -28,7 +28,7 @@ const connectDB = async (): Promise<void> => {
 
     if (isLinux) {
       // Configuration spécifique pour Ubuntu/Linux
-      uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&ssl=true&sslValidate=false&authSource=admin&tlsInsecure=true`;
+      uri = `mongodb+srv://paul:${mongoPassword}@eth-cc.4o0hvn9.mongodb.net/defi-apy-db?retryWrites=true&w=majority&appName=eth-cc&ssl=true&sslValidate=false&authSource=admin`;
       
       clientOptions = {
         serverApi: {
@@ -43,13 +43,10 @@ const connectDB = async (): Promise<void> => {
         maxPoolSize: 5,
         retryWrites: true,
         retryReads: true,
-        // SSL/TLS options pour Ubuntu - plus permissives
+        // SSL/TLS options pour Ubuntu - utiliser seulement tlsInsecure
         tls: true,
         tlsInsecure: true,
-        tlsAllowInvalidCertificates: true,
-        tlsAllowInvalidHostnames: true,
         // Désactiver complètement la vérification SSL pour Ubuntu
-        checkServerIdentity: false,
         minPoolSize: 0,
         maxIdleTimeMS: 30000,
         waitQueueTimeoutMS: 30000
