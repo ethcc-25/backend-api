@@ -51,6 +51,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 // @access  Public
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
+
     const { user_address, positions }: ProfileData = req.body;
 
     // Validation
@@ -74,15 +75,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     try {
+
       // Try MongoDB first
       const result = await Profile.findOneAndUpdate(
-
         { user_address },
         { user_address, positions },
         { upsert: true, new: true }
       );
-
-      console.log('POST /api/profile - MongoDB result:', result);
 
       res.json({
         success: true,

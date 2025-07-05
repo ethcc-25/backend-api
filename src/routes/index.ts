@@ -63,6 +63,7 @@ router.get('/chains', (req, res) => {
 
 // Get all protocols data for all chains
 router.get('/best-opportunity', async (req, res) => {
+
   try {
     const { userAddress } = req.query;
 
@@ -134,6 +135,7 @@ router.get('/best-opportunity', async (req, res) => {
             data: userOpportunity,
             timestamp: new Date().toISOString()
           };
+
           
           res.json(response);
           return;
@@ -191,7 +193,6 @@ router.get('/best-opportunity', async (req, res) => {
       });
     });
 
-    console.log(allPools);
 
     // Find the best opportunity (highest combinedApy)
     let bestOpportunity = null;
