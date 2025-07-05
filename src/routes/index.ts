@@ -295,24 +295,4 @@ router.get('/morpho/:chain', async (req, res) => {
   }
 });
 
-// Get cache statistics
-router.get('/cache/stats', (req, res) => {
-  const stats = cache.getStats();
-  res.json({
-    success: true,
-    data: stats,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Clear cache
-router.delete('/cache', (req, res) => {
-  cache.clear();
-  res.json({
-    success: true,
-    message: 'Cache cleared successfully',
-    timestamp: new Date().toISOString()
-  });
-});
-
 export default router; 
