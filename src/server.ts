@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
 import profileRoutes from './routes/profile';
+import retrieveRoutes from './routes/retrieve';
 import connectDB, { closeConnection } from './config/database';
 import { cache } from './utils/cache';
 
@@ -56,6 +57,7 @@ app.use(rateLimiter);
 // Routes
 app.use('/api', routes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/retrieve', retrieveRoutes);
 
 // Root endpoint with API documentation
 app.get('/', (req, res) => {
@@ -88,6 +90,14 @@ app.get('/', (req, res) => {
         get: 'GET /api/profile/:user_address - Get profile',
         getAll: 'GET /api/profile - Get all profiles',
         delete: 'DELETE /api/profile/:user_address - Delete profile'
+      },
+      cctp: {
+        info: 'GET /api/retrieve - CCTP API information',
+        attestation: 'GET /api/retrieve/attestation/:transactionHash - Retrieve CCTP attestation (waits for completion)',
+        status: 'GET /api/retrieve/status/:transactionHash - Get current attestation status (no waiting)',
+        attestationPost: 'POST /api/retrieve/attestation - Retrieve CCTP attestation via POST request',
+        domains: 'GET /api/retrieve/domains - Get supported CCTP domain mappings',
+        test: 'GET /api/retrieve/test/:transactionHash - Test endpoint to see raw Circle API response'
       }
     },
     supportedChains: ['ethereum', 'arbitrum', 'base'],

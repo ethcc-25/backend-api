@@ -88,3 +88,46 @@ export interface CustomRequest extends Request {
     chain: string;
   };
 } 
+
+// CCTP Attestation types - Based on Circle's official API documentation
+export interface DecodedMessage {
+  sourceDomain: string;
+  destinationDomain: string;
+  nonce: string;
+  sender: string;
+  recipient: string;
+  destinationCaller: string;
+  minFinalityThreshold?: string; // Only present for V2 messages
+  finalityThresholdExecuted?: string; // Only present for V2 messages
+  messageBody: string;
+}
+
+export interface DecodedMessageBody {
+  burnToken: string;
+  mintRecipient: string;
+  amount: string;
+  messageSender: string;
+  maxFee?: string; // Only present for V2 messages
+  feeExecuted?: string; // Only present for V2 messages
+  expirationBlock?: string; // Only present for V2 messages
+  hookData?: string; // Only present for V2 messages
+}
+
+export interface AttestationMessage {
+  message: string; // The hex-encoded message. 0x if the attestation is not yet available
+  eventNonce: string; // The nonce associated with the message
+  attestation: string; // The attestation. PENDING if the attestation is not yet available
+  decodedMessage: DecodedMessage | null; // Decoded representation of the message. Null or empty if decoding fails
+  decodedMessageBody: DecodedMessageBody | null; // Decoded representation of the message body. Null or empty if decoding fails or is not applicable
+  cctpVersion: number; // The CCTP version of the message
+  status: 'pending_confirmations' | string; // The status of the attestation
+}
+
+export interface AttestationRequest {
+  transactionHash: string;
+  sourceDomain?: number;
+}
+
+export interface AttestationResponse extends ApiResponse<AttestationMessage> {
+  data?: AttestationMessage;
+} 
