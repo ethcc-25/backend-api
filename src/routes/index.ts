@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { AaveService } from '../services/aave.service';
 import { FluidService } from '../services/fluid.service';
 import { MorphoService } from '../services/morpho.service';
-import { ApiResponse, AllProtocolsData } from '../types';
-import { getSupportedChains, getSupportedChainsForProtocol } from '../config/chains';
+import { ApiResponse, AllProtocolsData, SupportedProtocol } from '../types';
+import { getSupportedChains, getSupportedChainsForProtocol, getChainById } from '../config/chains';
 import { cache } from '../utils/cache';
 
 const router: Router = Router();
@@ -71,8 +71,7 @@ router.get('/best-opportunity', async (req, res) => {
 
     // Flatten all pools from all protocols and chains
     const allPools: Array<{
-      protocol: string;
-      chain: string;
+      protocol: SupportedProtocol;
       chainId: number;
       pool: any;
     }> = [];
@@ -81,8 +80,7 @@ router.get('/best-opportunity', async (req, res) => {
     aaveData.forEach(chainData => {
       chainData.pools.forEach(pool => {
         allPools.push({
-          protocol: 'AAVE',
-          chain: getChainNameById(chainData.chain_id),
+          protocol: SupportedProtocol.AAVE,
           chainId: chainData.chain_id,
           pool
         });
@@ -93,8 +91,7 @@ router.get('/best-opportunity', async (req, res) => {
     fluidData.forEach(chainData => {
       chainData.pools.forEach(pool => {
         allPools.push({
-          protocol: 'Fluid',
-          chain: getChainNameById(chainData.chain_id),
+          protocol: SupportedProtocol.FLUID,
           chainId: chainData.chain_id,
           pool
         });
@@ -105,8 +102,7 @@ router.get('/best-opportunity', async (req, res) => {
     morphoData.forEach(chainData => {
       chainData.pools.forEach(pool => {
         allPools.push({
-          protocol: 'Morpho',
-          chain: getChainNameById(chainData.chain_id),
+          protocol: SupportedProtocol.MORPHO,
           chainId: chainData.chain_id,
           pool
         });
@@ -119,12 +115,11 @@ router.get('/best-opportunity', async (req, res) => {
     let bestOpportunity = null;
     let maxApy = 0;
 
-    allPools.forEach(({ protocol, chain, chainId, pool }) => {
+    allPools.forEach(({ protocol, chainId, pool }) => {
       if (pool.apy > maxApy) {
         maxApy = pool.apy;
         bestOpportunity = {
           protocol,
-          chain,
           chainId,
           apy: pool.apy,
           poolApy: pool.poolApy,
@@ -156,16 +151,6 @@ router.get('/best-opportunity', async (req, res) => {
   }
 });
 
-// Helper function to get chain name by ID
-function getChainNameById(chainId: number): string {
-  const chainMap: Record<number, string> = {
-    1: 'ethereum',
-    42161: 'arbitrum',
-    8453: 'base',
-    480: 'world'
-  };
-  return chainMap[chainId] || 'unknown';
-}
 // Get AAVE data for all chains
 router.get('/aave', async (req, res) => {
   try {

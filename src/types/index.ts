@@ -173,3 +173,16 @@ export interface DepositStatus {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export enum SupportedProtocol {
+  AAVE = 1,
+  MORPHO = 2,
+  FLUID = 3,
+}
+
+export enum SupportedChainDomain {
+  ETHEREUM = 0,
+  OPTIMISM = 2,
+  ARBITRUM = 3,
+  BASE = 6,
+}
