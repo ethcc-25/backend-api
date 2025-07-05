@@ -22,7 +22,7 @@ npm install
 
 # Arrêter l'application si elle tourne déjà
 echo "🛑 Arrêt de l'application existante..."
-pm2 delete defi-apy-server 2>/dev/null || echo "Aucune application en cours"
+pm2 delete monde-api 2>/dev/null || echo "Aucune application en cours"
 
 # Démarrer l'application avec PM2
 echo "🚀 Démarrage de l'application..."

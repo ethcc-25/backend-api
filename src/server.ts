@@ -8,6 +8,7 @@ import bridgeRoutes from './routes/bridge';
 import connectDB from './config/database';
 import { cache } from './utils/cache';
 
+// Chargement des variables d'environnement depuis .env
 dotenv.config();
 
 const app = express();
