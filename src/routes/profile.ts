@@ -110,28 +110,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         data: result,
         source: 'MongoDB'
       });
-    } else {
-      // Use in-memory storage
-      const existingIndex = profiles.findIndex(p => p.user_address === user_address);
-      const profileData = {
-        user_address,
-        positions,
-        createdAt: existingIndex === -1 ? new Date().toISOString() : profiles[existingIndex].createdAt,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (existingIndex >= 0) {
-        profiles[existingIndex] = { ...profiles[existingIndex], ...profileData };
-      } else {
-        profiles.push(profileData);
-      }
-
-      res.json({
-        success: true,
-        data: profileData,
-        source: 'In-memory storage',
-        message: 'MongoDB not connected - using temporary storage'
-      });
     }
   } catch (error) {
     console.error('Error creating/updating profile:', error);
