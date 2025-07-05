@@ -63,6 +63,7 @@ const depositStatusSchema = new Schema<IDepositStatusDocument>({
 // Index for efficient querying
 depositStatusSchema.index({ userWallet: 1, status: 1 });
 depositStatusSchema.index({ bridgeTransactionHash: 1 });
+depositStatusSchema.index({ bridgeTransactionHash: 1 }, { unique: true });
 depositStatusSchema.index({ createdAt: -1 });
 
 const DepositStatus = model<IDepositStatusDocument>('DepositStatus', depositStatusSchema);

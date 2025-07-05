@@ -114,6 +114,28 @@ export class DepositService {
   }
 
   /**
+   * Get deposit status by transaction hash
+   */
+  async getStatusByTransactionHash(transactionHash: string): Promise<IDepositStatus | null> {
+    try {
+      // Try MongoDB first
+      const status = await DepositStatus.findOne({ bridgeTransactionHash: transactionHash });
+      
+      if (!status) {
+        return null;
+      }
+      
+      return {
+        ...status.toObject(),
+        _id: status._id.toString()
+      } as unknown as IDepositStatus;
+    } catch (error) {
+      console.error('Error getting deposit status by transaction hash:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize deposit request
    */
   async initializedDeposit(request: DepositRequest): Promise<IDepositStatus> {
@@ -147,18 +169,16 @@ export class DepositService {
    * Wait for CCTP attestation and process deposit
    */
   async waitForConfirmationAndProcess(
-    bridgeId: string,
     transactionHash: string
   ): Promise<IDepositStatus> {
-    let depositStatus = await this.getStatusDeposit(bridgeId);
+    let depositStatus = await this.getStatusByTransactionHash(transactionHash);
     
     if (!depositStatus) {
-      throw new Error('Deposit status not found');
+      throw new Error('Deposit status not found for transaction hash');
     }
 
     try {
-      // Update with transaction hash
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         bridgeTransactionHash: transactionHash,
         status: 'pending_attestation'
       });
@@ -195,7 +215,7 @@ export class DepositService {
       }
 
       if (!attestationData || attestationData.status !== 'complete') {
-        depositStatus = await this.updateDepositStatus(bridgeId, {
+        depositStatus = await this.updateDepositStatus(depositStatus._id, {
           status: 'failed',
           errorMessage: 'Attestation timeout or not found'
         });
@@ -203,7 +223,7 @@ export class DepositService {
       }
 
       // Update status with attestation received
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'attestation_received',
         attestationMessage: attestationData.message,
         attestation: attestationData.attestation
@@ -218,13 +238,13 @@ export class DepositService {
       );
 
       // Update status with deposit processing
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'deposit_confirmed',
         depositTxHash
       });
 
       // Final status update
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'completed'
       });
 
@@ -234,7 +254,7 @@ export class DepositService {
       console.error('Error in bridge process:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      depositStatus = await this.updateDepositStatus(bridgeId, {
+      depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'failed',
         errorMessage
       });
