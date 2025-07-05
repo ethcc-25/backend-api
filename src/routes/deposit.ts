@@ -80,7 +80,7 @@ router.post('/wait-confirmation', async (req: Request, res: Response): Promise<v
     });
 
   } catch (error) {
-    console.error('Error in bridge confirmation:', error);
+    console.error('Error in deposit confirmation:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Deposit process failed'

@@ -1,6 +1,6 @@
 import { createWalletClient, http, parseAbi, getContract, publicActions } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet, arbitrum, base } from 'viem/chains';
+import { mainnet, arbitrum, base, worldchain } from 'viem/chains';
 import DepositStatus from '../models/DepositStatus';
 import { RetrieveService } from './retrieve';
 import { DepositRequest, DepositStatus as IDepositStatus } from '../types';
@@ -32,17 +32,7 @@ export class DepositService {
       case 'base':
         return base;
       case 'world':
-        // For World chain, we'll use a custom chain config
-        return {
-          id: 480,
-          name: 'World',
-          network: 'world',
-          nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-          rpcUrls: {
-            default: { http: ['https://world-rpc.example.com'] },
-            public: { http: ['https://world-rpc.example.com'] }
-          }
-        };
+        return worldchain;
       default:
         throw new Error(`Unsupported chain: ${chainName}`);
     }
@@ -160,6 +150,8 @@ export class DepositService {
         return 'arbitrum';
       case 6:
         return 'base';
+      case 14:
+        return 'world';
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -221,9 +213,6 @@ export class DepositService {
         });
         throw new Error('Attestation timeout or not found');
       }
-
-      console.log(`Attestation received: ${attestationData}`);
-
       // Update status with attestation received
       depositStatus = await this.updateDepositStatus(depositStatus._id, {
         status: 'attestation_received',
