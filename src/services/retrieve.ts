@@ -16,6 +16,28 @@ export class RetrieveService {
     }
 
     /**
+     * Get CCTP domain number for a given chain
+     */
+    private getDomainNumber(chainSource: string): number {
+        const domainMapping: Record<string, { testnet: number; mainnet: number }> = {
+            'ethereum': { testnet: 0, mainnet: 0 },      // Ethereum Sepolia / Ethereum Mainnet
+            'arbitrum': { testnet: 3, mainnet: 3 },      // Arbitrum Sepolia / Arbitrum One
+            'base': { testnet: 6, mainnet: 6 },          // Base Sepolia / Base Mainnet
+            'avalanche': { testnet: 1, mainnet: 1 },     // Avalanche Fuji / Avalanche C-Chain
+            'optimism': { testnet: 2, mainnet: 2 },      // OP Sepolia / Optimism Mainnet
+            'polygon': { testnet: 7, mainnet: 7 },       // Polygon Amoy / Polygon PoS
+            'world': { testnet: 0, mainnet: 0 }          // Default to Ethereum domain
+        };
+
+        const chainConfig = domainMapping[chainSource.toLowerCase()];
+        if (!chainConfig) {
+            throw new Error(`Unsupported chain: ${chainSource}`);
+        }
+
+        return this.isTestnet ? chainConfig.testnet : chainConfig.mainnet;
+    }
+
+    /**
      * Retrieve CCTP attestation for a given transaction hash
      * @param transactionHash - The transaction hash from the burn transaction
      * @param chainSource - The source chain name
@@ -31,16 +53,17 @@ export class RetrieveService {
             throw new Error('Invalid transaction hash provided');
         }
 
-        // Map chain name to domain ID
-        const domainMapping: Record<string, number> = {
-            'ethereum': this.isTestnet ? 0 : 0,
-            'arbitrum': this.isTestnet ? 3 : 3,
-            'base': this.isTestnet ? 6 : 6,
-            'world': 0 // Default to 0 for world chain
-        };
+        // Validate chainSource parameter
+        if (!chainSource) {
+            throw new Error('Chain source parameter is required');
+        }
 
-        const sourceDomain = domainMapping[chainSource.toLowerCase()] ?? 0;
+        const sourceDomain = this.getDomainNumber(chainSource);
+        console.log(`Using domain ${sourceDomain} for chain ${chainSource} (testnet: ${this.isTestnet})`);
+
         const url = `${this.getBaseUrl()}/${sourceDomain}?transactionHash=${transactionHash}`;
+
+        console.log('attestation done', url);
 
         try {
             const response = await axios.get(url, {
@@ -52,7 +75,7 @@ export class RetrieveService {
 
             console.log(response.data.messages[0].status);
 
-            // Vérifie si l’attestation est complète
+            // Vérifie si l'attestation est complète
             if (response.data && response.data.messages[0].status === "complete") {
                 return {
                     status: response.data.messages[0].status,

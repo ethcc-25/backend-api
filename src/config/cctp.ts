@@ -71,8 +71,6 @@ export function getSupportedDomains(): { [key: string]: CCTPDomainConfig } {
 /**
  * Get API URL for CCTP
  */
-export function getApiUrl(isTestnet: boolean = true): string {
-  return isTestnet 
-    ? 'https://iris-api-sandbox.circle.com/v2/messages'
-    : 'https://iris-api.circle.com/v2/messages';
+export function getApiUrl(isTestnet: boolean = false): string {
+  return isTestnet ? 'https://iris-api-sandbox.circle.com/v2/messages' : 'https://iris-api.circle.com/v2/messages';
 } 
