@@ -1,6 +1,6 @@
 import { createWalletClient, http, parseAbi, getContract, publicActions, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet, arbitrum, base, worldchain } from 'viem/chains';
+import { mainnet, arbitrum, base, optimism, worldchain } from 'viem/chains';
 import WithdrawStatus from '../models/WithdrawStatus';
 import { RetrieveService } from './retrieve';
 import { WithdrawStatus as IWithdrawStatus, Position } from '../types';
@@ -31,6 +31,8 @@ export class WithdrawService {
         return arbitrum;
       case 'base':
         return base;
+      case 'optimism':
+        return optimism;
       case 'world':
         return worldchain;
       default:
@@ -45,6 +47,8 @@ export class WithdrawService {
     switch (domain) {
       case 0: // Ethereum
         return mainnet;
+      case 2: // Optimism
+        return optimism;
       case 3: // Arbitrum
         return arbitrum;
       case 6: // Base
@@ -63,6 +67,8 @@ export class WithdrawService {
     switch (domain) {
       case 0: // Ethereum
         return getChainConfig('ethereum');
+      case 2: // Optimism
+        return getChainConfig('optimism');
       case 3: // Arbitrum
         return getChainConfig('arbitrum');
       case 6: // Base
@@ -81,6 +87,8 @@ export class WithdrawService {
     switch (domain) {
       case 0: // Ethereum
         return getYieldManagerContract('ethereum');
+      case 2: // Optimism
+        return getYieldManagerContract('optimism');
       case 3: // Arbitrum
         return getYieldManagerContract('arbitrum');
       case 6: // Base
