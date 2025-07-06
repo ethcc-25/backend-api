@@ -278,6 +278,47 @@ router.get('/best-opportunity', async (req, res) => {
   }
 });
 
+// get all pools
+router.get('/all', async (req, res) => {
+  const [aaveData, fluidData, morphoData] = await Promise.all([
+    aaveService.getAllChainsData(),
+    fluidService.getAllChainsData(),
+    morphoService.getAllChainsData()
+  ]);
+
+
+  let allPools: any[] = [];
+
+  aaveData.forEach(chainData => {
+    chainData.pools.forEach(pool => {
+      allPools.push(pool);
+    });
+  });
+
+  fluidData.forEach(chainData => {
+    chainData.pools.forEach(pool => {
+      allPools.push(pool);
+    });
+  });
+
+  morphoData.forEach(chainData => {
+    chainData.pools.forEach(pool => {
+      allPools.push(pool);
+    });
+  });
+
+  const filteredPools = allPools.filter((pool: any) => pool.apy > 0);
+  const sortedPools = filteredPools.sort((a: any, b: any) => b.apy - a.apy);
+  
+  const response: ApiResponse<typeof sortedPools> = {
+    success: true,
+    data: sortedPools,
+    timestamp: new Date().toISOString()
+  };
+  
+  res.json(response);
+});
+
 /**
  * Helper function to get protocol name from pool ID
  */
