@@ -76,10 +76,10 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
       bridgeTransactionHash: depositRequest.bridgeTransactionHash
     };
 
-    const initDeposit: DepositStatus = await depositService.initializedDeposit(internalDepositRequest);
+    await depositService.initializedDeposit(internalDepositRequest);
 
     const depositStatus: DepositStatus = await depositService.waitForConfirmationAndProcess(
-      initDeposit.bridgeTransactionHash
+      depositRequest.bridgeTransactionHash
     );
 
     res.json({

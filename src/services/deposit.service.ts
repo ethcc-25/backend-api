@@ -246,7 +246,7 @@ export class DepositService {
       console.log(`Waiting for attestation for transaction: ${transactionHash}`);
 
       // Poll for attestation (max 10 minutes)
-      const maxAttempts = 60; // 10 minutes with 10-second intervals
+      const maxAttempts = 12; // 10 minutes with 10-second intervals
       let attempts = 0;
       let attestationData = null;
 
