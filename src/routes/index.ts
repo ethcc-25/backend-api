@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { AaveService } from '../services/aave.service';
 import { FluidService } from '../services/fluid.service';
 import { MorphoService } from '../services/morpho.service';
-import { ApiResponse, AllProtocolsData, SupportedProtocol } from '../types';
+import { ApiResponse, AllProtocolsData, SupportedProtocol, Token } from '../types';
 import { getSupportedChains, getSupportedChainsForProtocol, getChainById } from '../config/chains';
 import { cache } from '../utils/cache';
 import Profile from '../models/Profile';
@@ -231,6 +231,111 @@ router.get('/best-opportunity', async (req, res) => {
       timestamp: new Date().toISOString()
     };
     res.status(500).json(response);
+  }
+});
+
+// get all opportunities ordered by apy
+router.get('/all', async (req, res) => {
+  try {
+    // Fetch data from all protocols and chains
+    const [aaveData, fluidData, morphoData] = await Promise.all([
+      aaveService.getAllChainsData(),
+      fluidService.getAllChainsData(),
+      morphoService.getAllChainsData()
+    ]);
+
+    // Flatten all pools from all protocols and chains
+    const allPools: Array<{
+      protocol: SupportedProtocol;
+      chainId: number;
+      chainName: string;
+      apy: number;
+      poolApy: number;
+      rewardsApy: number;
+      tvl: number;
+      symbol: string;
+      name?: string;
+      address?: string;
+      tokens?: Token[];
+    }> = [];
+
+    // Add AAVE pools
+    aaveData.forEach(chainData => {
+      chainData.pools.forEach(pool => {
+        const chainConfig = getChainById(chainData.chain_id);
+        allPools.push({
+          protocol: SupportedProtocol.AAVE,
+          chainId: chainData.chain_id,
+          chainName: chainConfig?.name || 'Unknown',
+          apy: pool.apy,
+          poolApy: pool.poolApy,
+          rewardsApy: pool.rewardsApy,
+          tvl: pool.tvl,
+          symbol: pool.symbol,
+          name: pool.name,
+          address: pool.address,
+          tokens: pool.tokens
+        });
+      });
+    });
+
+    // Add Fluid pools
+    fluidData.forEach(chainData => {
+      chainData.pools.forEach(pool => {
+        const chainConfig = getChainById(chainData.chain_id);
+        allPools.push({
+          protocol: SupportedProtocol.FLUID,
+          chainId: chainData.chain_id,
+          chainName: chainConfig?.name || 'Unknown',
+          apy: pool.apy,
+          poolApy: pool.poolApy,
+          rewardsApy: pool.rewardsApy,
+          tvl: pool.tvl,
+          symbol: pool.symbol,
+          name: pool.name,
+          address: pool.address,
+          tokens: pool.tokens
+        });
+      });
+    });
+
+    // Add Morpho pools
+    morphoData.forEach(chainData => {
+      chainData.pools.forEach(pool => {
+        const chainConfig = getChainById(chainData.chain_id);
+        allPools.push({
+          protocol: SupportedProtocol.MORPHO,
+          chainId: chainData.chain_id,
+          chainName: chainConfig?.name || 'Unknown',
+          apy: pool.apy,
+          poolApy: pool.poolApy,
+          rewardsApy: pool.rewardsApy,
+          tvl: pool.tvl,
+          symbol: pool.symbol,
+          name: pool.name,
+          address: pool.address,
+          tokens: pool.tokens
+        });
+      });
+    });
+
+    // Sort by APY descending (highest first)
+    const sortedPools = allPools.sort((a, b) => b.apy - a.apy);
+
+    const response: ApiResponse<typeof sortedPools> = {
+      success: true,
+      data: sortedPools,
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching all pools:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch all pools data',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
