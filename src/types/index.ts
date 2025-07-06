@@ -73,7 +73,7 @@ export interface CacheEntry<T> {
   ttl: number;
 }
 
-export type SupportedChains = 'ethereum' | 'arbitrum' | 'base' | 'world' | 'optimism';
+export type SupportedChains = 'ethereum' | 'arbitrum' | 'base' | 'world';
 export type SupportedProtocols = 'aave' | 'fluid' | 'morpho';
 
 export interface AllProtocolsData {
