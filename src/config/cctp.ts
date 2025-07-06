@@ -18,7 +18,7 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     testnet: true
   },
   'ethereum': {
-    domain: 1,
+    domain: 0,
     name: 'Ethereum',
     description: 'Ethereum',
     testnet: false
@@ -47,7 +47,12 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     description: 'Base',
     testnet: false
   },
-  
+  'optimism': {
+    domain: 2,
+    name: 'Optimism',
+    description: 'Optimism',
+    testnet: false
+  }
 };
 
 /**

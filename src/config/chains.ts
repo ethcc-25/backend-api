@@ -1,3 +1,4 @@
+import { optimism } from 'viem/chains';
 import { ChainConfig } from '../types';
 
 export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
@@ -50,6 +51,26 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
       }
     }
   },
+  optimism: {
+    chainId: 10,
+    name: 'Optimism',
+    rpcUrl: process.env.OPTIMISM_RPC_URL || 'https://optimism-rpc.publicnode.com',
+    contracts: {
+      aave: {
+        poolAddress: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // Aave V3 Pool on Optimism
+        usdcAddress: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' // USDC on Optimism
+      },
+      morpho: {
+        apiUrl: 'https://api.morpho.org/graphql',
+        pools: [
+          {
+            address: '0x3520E1a10038131A3C00Bf2158835A75e929642d',
+            name: 'USDC',
+          }
+        ]
+      }
+    }
+  },
   world: {
     chainId: 4,
     name: 'World',
@@ -64,6 +85,14 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
           }
         ]
       }
+    }
+  },
+  worldland: {
+    chainId: 103,
+    name: 'WorldLand',
+    rpcUrl: process.env.WORLDLAND_RPC_URL || 'https://worldland-rpc.example.com',
+    contracts: {
+      // Add contracts as needed
     }
   }
 };
@@ -96,7 +125,9 @@ export const getChainDomainMapping = (): Record<number, number> => {
     1: 0,     // Ethereum → Domain 0
     42161: 3, // Arbitrum → Domain 3
     8453: 6,  // Base → Domain 6
-    480: 14   // World → Domain 14
+    10: 2,    // Optimism → Domain 2
+    480: 14,  // World → Domain 14
+    103: 15   // WorldLand → Domain 15 (custom domain)
   };
 };
 
