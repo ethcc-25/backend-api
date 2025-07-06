@@ -45,7 +45,6 @@ export const getChainDomainMapping = (): Record<number, number> => {
     8453: 6,  // Base → Domain 6
     10: 2,    // Optimism → Domain 2
     480: 14,  // World → Domain 14
-    103: 15   // WorldLand → Domain 15 (custom domain)
   };
 };
 

@@ -55,6 +55,8 @@ export class WithdrawService {
         return base;
       case 14: // World
         return worldchain;
+      case 10: // Optimism (CCTP domain)
+        return optimism;
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -75,6 +77,8 @@ export class WithdrawService {
         return getChainConfig('base');
       case 14: // World
         return getChainConfig('world');
+      case 10: // Optimism (CCTP domain)
+        return getChainConfig('optimism'); // Use Optimism config for CCTP
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -95,6 +99,8 @@ export class WithdrawService {
         return getYieldManagerContract('base');
       case 14: // World
         return getYieldManagerContract('world');
+      case 10: // Optimism (CCTP domain)
+        return getYieldManagerContract('optimism'); // Use Optimism contract for CCTP
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -146,7 +152,7 @@ export class WithdrawService {
    * Check if user has a position on any supported chain
    */
   async checkUserPosition(userAddress: string): Promise<{ position: Position; chainDomain: number } | null> {
-    const supportedDomains = [0, 3, 6]; // Ethereum, Arbitrum, Base
+    const supportedDomains = [0, 3, 6, 10, 2]; // Ethereum, Arbitrum, Base, op
     
     for (const domain of supportedDomains) {
       try {
@@ -212,11 +218,6 @@ export class WithdrawService {
       let withdrawStatus
       
       if (!positionResult) {
-        withdrawStatus = await this.updateWithdrawStatus(undefined, {
-          userAddress,
-          status: 'failed',
-          errorMessage: 'No position found for this user'
-        });
         throw new Error('No position found for this user');
       }
 

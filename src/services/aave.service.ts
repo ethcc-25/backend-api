@@ -87,7 +87,8 @@ export class AaveService {
         const chainNameMapping = {
           'ethereum': 'Ethereum',
           'arbitrum': 'Arbitrum',
-          'base': 'Base'
+          'base': 'Base',
+          'optimism': 'Optimism',
         };
         const usdcPool = defiLlamaResponse.data.data.find((pool: any) => 
           pool.chain === chainNameMapping[chainName as keyof typeof chainNameMapping] && 

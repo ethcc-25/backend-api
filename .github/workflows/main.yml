@@ -37,6 +37,7 @@ jobs:
           echo "YIELD_MANAGER_BASE=${{ vars.YIELD_MANAGER_BASE }}" >> .env
           echo "YIELD_MANAGER_ARBITRUM=${{ vars.YIELD_MANAGER_ARBITRUM }}" >> .env
           echo "YIELD_MANAGER_WORLD=${{ vars.YIELD_MANAGER_WORLD }}" >> .env
+          echo "YIELD_MANAGER_OP=${{ vars.YIELD_MANAGER_OP }}" >> .env
 
       - name: Build server
         run: npm run build

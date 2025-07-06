@@ -179,6 +179,8 @@ export class DepositService {
         return base;
       case 14: // World
         return worldchain;
+      case 10: // Optimism (CCTP domain)
+        return optimism; // Use Optimism for CCTP domain
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -199,6 +201,8 @@ export class DepositService {
         return getChainConfig('base');
       case 14: // World
         return getChainConfig('world');
+      case 10: // Optimism (CCTP domain)
+        return getChainConfig('optimism'); // Use Optimism config for CCTP
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
