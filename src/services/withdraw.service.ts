@@ -1,6 +1,6 @@
 import { createWalletClient, http, parseAbi, getContract, publicActions, createPublicClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet, arbitrum, base, optimism, worldchain } from 'viem/chains';
+import { mainnet, optimism, arbitrum, base, worldchain } from 'viem/chains';
 import WithdrawStatus from '../models/WithdrawStatus';
 import { RetrieveService } from './retrieve';
 import { WithdrawStatus as IWithdrawStatus, Position } from '../types';
@@ -27,12 +27,12 @@ export class WithdrawService {
     switch (chainName.toLowerCase()) {
       case 'ethereum':
         return mainnet;
+      case 'optimism':
+        return optimism;
       case 'arbitrum':
         return arbitrum;
       case 'base':
         return base;
-      case 'optimism':
-        return optimism;
       case 'world':
         return worldchain;
       default:
@@ -55,8 +55,6 @@ export class WithdrawService {
         return base;
       case 14: // World
         return worldchain;
-      case 10: // Optimism (CCTP domain)
-        return optimism;
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -77,8 +75,6 @@ export class WithdrawService {
         return getChainConfig('base');
       case 14: // World
         return getChainConfig('world');
-      case 10: // Optimism (CCTP domain)
-        return getChainConfig('optimism'); // Use Optimism config for CCTP
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -99,8 +95,6 @@ export class WithdrawService {
         return getYieldManagerContract('base');
       case 14: // World
         return getYieldManagerContract('world');
-      case 10: // Optimism (CCTP domain)
-        return getYieldManagerContract('optimism'); // Use Optimism contract for CCTP
       default:
         throw new Error(`Unsupported chain domain: ${domain}`);
     }
@@ -109,7 +103,7 @@ export class WithdrawService {
   /**
    * Create or update withdraw status in database
    */
-  private async updateWithdrawStatus(
+  async updateWithdrawStatus(
     id: string | undefined,
     updates: Partial<IWithdrawStatus>
   ): Promise<IWithdrawStatus> {
@@ -152,7 +146,7 @@ export class WithdrawService {
    * Check if user has a position on any supported chain
    */
   async checkUserPosition(userAddress: string): Promise<{ position: Position; chainDomain: number } | null> {
-    const supportedDomains = [0, 3, 6, 10, 2]; // Ethereum, Arbitrum, Base, op
+    const supportedDomains = [0, 2, 3, 6]; // Ethereum, Optimism, Arbitrum, Base
     
     for (const domain of supportedDomains) {
       try {
@@ -177,7 +171,7 @@ export class WithdrawService {
           client: publicClient
         });
 
-        console.log(`Checking position for ${userAddress} on domain ${domain}...`);
+
 
         // Read position from contract
         const positionData = await contract.read.positions([userAddress as `0x${string}`]);
@@ -193,7 +187,6 @@ export class WithdrawService {
             vault: positionData[5] as string
           };
 
-          console.log(`Position found on domain ${domain}:`, position);
           return { position, chainDomain: domain };
         }
       } catch (error) {
@@ -208,24 +201,37 @@ export class WithdrawService {
   /**
    * Complete withdraw process in a single call
    */
-  async completeWithdrawProcess(userAddress: string): Promise<IWithdrawStatus> {
+  async initializeWithdrawProcess(userAddress: string): Promise<IWithdrawStatus> {
     try {
-
+      // Create initial withdraw status
+      let withdrawStatus = await this.updateWithdrawStatus(undefined, {
+        userAddress,
+        srcChainDomain: 0, // Will be updated when position is found
+        dstChainDomain: 14, // Always WORLD
+        status: 'checking_position',
+        position: {
+          pool: 0,
+          positionId: '',
+          user: '',
+          amountUsdc: '0',
+          shares: '0',
+          vault: ''
+        }
+      });
 
       // Check if user has a position
       const positionResult = await this.checkUserPosition(userAddress);
-
-      let withdrawStatus
       
       if (!positionResult) {
+        withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
+          status: 'failed',
+          errorMessage: 'No position found for this user'
+        });
         throw new Error('No position found for this user');
       }
 
-
-
       // Update with found position
-      withdrawStatus = await this.updateWithdrawStatus(undefined, {
-        userAddress:  userAddress,
+      withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
         position: positionResult.position,
         srcChainDomain: positionResult.chainDomain,
         status: 'position_found'
@@ -237,19 +243,18 @@ export class WithdrawService {
         userAddress
       );
 
-      // Update status with transaction hash
+      // Update status with transaction hash and set to pending_attestation
       withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
-        status: 'withdraw_initiated',
+        status: 'pending_attestation',
         initWithdrawTxHash
       });
 
-      // Wait for CCTP attestation and complete the process
-      withdrawStatus = await this.waitForAttestationAndProcess(withdrawStatus._id);
+      console.log(`Withdraw initiated for ${userAddress}. Transaction: ${initWithdrawTxHash}. Status set to pending_attestation.`);
 
       return withdrawStatus;
 
     } catch (error) {
-      console.error('Error in complete withdraw process:', error);
+      console.error('Error in initialize withdraw process:', error);
       throw error;
     }
   }
@@ -317,60 +322,16 @@ export class WithdrawService {
   }
 
   /**
-   * Wait for CCTP attestation and process withdraw
+   * Process a specific withdraw that has received attestation
    */
-  async waitForAttestationAndProcess(withdrawId: string): Promise<IWithdrawStatus> {
+  async processWithdrawWithAttestation(withdrawId: string, attestationData: any): Promise<IWithdrawStatus> {
     let withdrawStatus = await this.getWithdrawStatus(withdrawId);
     
     if (!withdrawStatus) {
       throw new Error('Withdraw status not found');
     }
 
-    if (!withdrawStatus.initWithdrawTxHash) {
-      throw new Error('No initWithdraw transaction hash found');
-    }
-
     try {
-      withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
-        status: 'pending_attestation'
-      });
-
-      console.log(`Waiting for attestation for transaction: ${withdrawStatus.initWithdrawTxHash}`);
-
-      // Poll for attestation (max 10 minutes)
-      const maxAttempts = 60; // 10 minutes with 10-second intervals
-      let attempts = 0;
-      let attestationData = null;
-
-      while (attempts < maxAttempts && !attestationData) {
-        try {
-          attestationData = await this.retrieveService.retrieveAttestation(
-            withdrawStatus.initWithdrawTxHash!,
-            withdrawStatus.srcChainDomain
-          );
-
-          if (attestationData && attestationData.status === 'complete') {
-            break;
-          }
-
-          // Wait 10 seconds before next attempt
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          attempts++;
-        } catch (error) {
-          console.error(`Attempt ${attempts + 1} failed:`, error);
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 10000));
-        }
-      }
-
-      if (!attestationData || attestationData.status !== 'complete') {
-        withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
-          status: 'failed',
-          errorMessage: 'Attestation timeout or not found'
-        });
-        throw new Error('Attestation timeout or not found');
-      }
-
       // Update status with attestation received
       withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
         status: 'attestation_received',
@@ -486,6 +447,26 @@ export class WithdrawService {
       } as unknown as IWithdrawStatus;
     } catch (error) {
       console.error('Error getting withdraw status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all pending attestation withdraws
+   */
+  async getPendingAttestationWithdraws(): Promise<IWithdrawStatus[]> {
+    try {
+      const statuses = await WithdrawStatus.find({ 
+        status: 'pending_attestation',
+        initWithdrawTxHash: { $exists: true, $ne: null }
+      }).sort({ createdAt: 1 }); // Oldest first
+      
+      return statuses.map(status => ({
+        ...status.toObject(),
+        _id: status._id.toString()
+      })) as unknown as IWithdrawStatus[];
+    } catch (error) {
+      console.error('Error getting pending attestation withdraws:', error);
       throw error;
     }
   }

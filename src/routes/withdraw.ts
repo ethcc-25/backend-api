@@ -7,7 +7,7 @@ const withdrawService = new WithdrawService();
 
 /**
  * POST /api/withdraw/initialize/:userAddress
- * Complete withdraw process for a user in a single call
+ * Initialize withdraw process for a user (returns immediately after initWithdraw)
  */
 router.post('/initialize/:userAddress', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -22,22 +22,22 @@ router.post('/initialize/:userAddress', async (req: Request, res: Response): Pro
       return;
     }
 
-    console.log(`Starting complete withdraw process for user: ${userAddress}`);
+    console.log(`Starting withdraw initialization for user: ${userAddress}`);
 
-    // Execute the complete withdraw process
-    const withdrawStatus: WithdrawStatus = await withdrawService.completeWithdrawProcess(userAddress);
+    // Initialize the withdraw process (returns immediately after initWithdraw)
+    const withdrawStatus: WithdrawStatus = await withdrawService.initializeWithdrawProcess(userAddress);
 
     res.json({
       success: true,
       data: withdrawStatus,
-      message: 'Withdraw process completed successfully'
+      message: 'Withdraw process initialized successfully. Attestation will be processed automatically.'
     });
 
   } catch (error) {
-    console.error('Error in complete withdraw process:', error);
+    console.error('Error in withdraw initialization:', error);
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to complete withdraw process'
+      error: error instanceof Error ? error.message : 'Failed to initialize withdraw process'
     });
   }
 });

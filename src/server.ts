@@ -8,11 +8,13 @@ import depositRoutes from './routes/deposit';
 import withdrawRoutes from './routes/withdraw';
 import connectDB from './config/database';
 import { cache } from './utils/cache';
+import { CronService } from './services/cron.service';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const cronService = new CronService();
 
 // Custom request logging middleware
 const requestLogger = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -90,8 +92,8 @@ process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
 const server = app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`🚀 DeFi APY Server running on port ${PORT}`);
-  
+  console.log(`🚀 Monde API running on port ${PORT}`);
+  cronService.start();
   connectDB();
 });
 
