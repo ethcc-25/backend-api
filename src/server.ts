@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
 import profileRoutes from './routes/profile';
-import retrieveRoutes from './routes/retrieve';
 import depositRoutes from './routes/deposit';
 import withdrawRoutes from './routes/withdraw';
 import connectDB from './config/database';
@@ -58,7 +57,6 @@ app.use(rateLimiter);
 // Routes
 app.use('/api', routes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/retrieve', retrieveRoutes);
 app.use('/api/deposit', depositRoutes);
 app.use('/api/withdraw', withdrawRoutes);
 
