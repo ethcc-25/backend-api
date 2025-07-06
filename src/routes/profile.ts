@@ -134,6 +134,7 @@ async function getCompleteUserProfile(userAddress: string) {
   }
 }
 
+
 /**
  * Helper function to get chain name from domain ID
  */
