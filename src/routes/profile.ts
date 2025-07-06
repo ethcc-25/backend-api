@@ -104,7 +104,7 @@ async function getCompleteUserProfile(userAddress: string) {
         dstChainDomain: withdraw.dstChainDomain,
         srcChainName: getChainNameFromDomain(withdraw.srcChainDomain),
         dstChainName: getChainNameFromDomain(withdraw.dstChainDomain),
-        protocol: getProtocolName(withdraw.position.pool),
+        protocol: withdraw.position.pool,
         initWithdrawTxHash: withdraw.initWithdrawTxHash,
         processWithdrawTxHash: withdraw.processWithdrawTxHash,
         createdAt: withdraw.createdAt,

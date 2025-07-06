@@ -26,7 +26,7 @@ export const YIELD_MANAGER_CONTRACTS: Record<string, ContractConfig> = {
     chainId: 10
   },
   'world': {
-    address: process.env.YIELD_MANAGER_WORLD || '0x02CFa5cFd2D9A22019f62AC97626e06ae6D39139',
+    address: process.env.YIELD_MANAGER_WORLD || '0x5dC767263481EFDD4d82C5CFF92Fe591Db2C1e67',
     chainId: 480
   }
 };
