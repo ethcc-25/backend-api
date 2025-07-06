@@ -9,11 +9,11 @@ export interface IWithdrawStatusDocument extends Omit<IWithdrawStatus, '_id' | '
 
 const positionSchema = new Schema({
   pool: { type: Number, required: true },
-  positionId: { type: String, required: true },
-  user: { type: String, required: true },
+  positionId: { type: String, required: true, default: '0x0000000000000000000000000000000000000000000000000000000000000000' },
+  user: { type: String, required: true, default: '0x0000000000000000000000000000000000000000' },
   amountUsdc: { type: String, required: true },
   shares: { type: String, required: true },
-  vault: { type: String, required: true }
+  vault: { type: String, required: true, default: '0x0000000000000000000000000000000000000000' }
 }, { _id: false });
 
 const withdrawStatusSchema = new Schema<IWithdrawStatusDocument>({

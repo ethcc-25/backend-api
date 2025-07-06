@@ -21,26 +21,6 @@ export class WithdrawService {
   }
 
   /**
-   * Get Viem chain configuration
-   */
-  private getViemChain(chainName: string) {
-    switch (chainName.toLowerCase()) {
-      case 'ethereum':
-        return mainnet;
-      case 'optimism':
-        return optimism;
-      case 'arbitrum':
-        return arbitrum;
-      case 'base':
-        return base;
-      case 'world':
-        return worldchain;
-      default:
-        throw new Error(`Unsupported chain: ${chainName}`);
-    }
-  }
-
-  /**
    * Get Viem chain configuration from domain ID
    */
   private getViemChainFromDomain(domain: number) {
@@ -171,7 +151,7 @@ export class WithdrawService {
           client: publicClient
         });
 
-
+        console.log(`Checking position for ${userAddress} on domain ${domain}...`);
 
         // Read position from contract
         const positionData = await contract.read.positions([userAddress as `0x${string}`]);
@@ -187,6 +167,7 @@ export class WithdrawService {
             vault: positionData[5] as string
           };
 
+          console.log(`Position found on domain ${domain}:`, position);
           return { position, chainDomain: domain };
         }
       } catch (error) {
@@ -199,45 +180,31 @@ export class WithdrawService {
   }
 
   /**
-   * Complete withdraw process in a single call
+   * Initialize withdraw process for a user
    */
   async initializeWithdrawProcess(userAddress: string): Promise<IWithdrawStatus> {
     try {
-      // Create initial withdraw status
-      let withdrawStatus = await this.updateWithdrawStatus(undefined, {
-        userAddress,
-        srcChainDomain: 0, // Will be updated when position is found
-        dstChainDomain: 14, // Always WORLD
-        status: 'checking_position',
-        position: {
-          pool: 0,
-          positionId: '',
-          user: '',
-          amountUsdc: '0',
-          shares: '0',
-          vault: ''
-        }
-      });
-
       // Check if user has a position
+      console.log(`Checking position for user: ${userAddress}`);
       const positionResult = await this.checkUserPosition(userAddress);
       
       if (!positionResult) {
-        withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
-          status: 'failed',
-          errorMessage: 'No position found for this user'
-        });
         throw new Error('No position found for this user');
       }
 
-      // Update with found position
-      withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
+      console.log(`Position found for user: ${userAddress}`, positionResult);
+
+      // Create withdraw status with found position
+      let withdrawStatus = await this.updateWithdrawStatus(undefined, {
+        userAddress,
         position: positionResult.position,
         srcChainDomain: positionResult.chainDomain,
-        status: 'position_found'
+        dstChainDomain: 14, // Always WORLD
+        status: 'initiating_withdraw'
       });
 
       // Initiate withdraw on the source chain
+      console.log(`Initiating withdraw for user: ${userAddress} on domain: ${positionResult.chainDomain}`);
       const initWithdrawTxHash = await this.callInitWithdraw(
         positionResult.chainDomain,
         userAddress

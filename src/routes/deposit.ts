@@ -97,7 +97,6 @@ router.post('/initialize', async (req: Request, res: Response): Promise<void> =>
   }
 });
 
-
 /**
  * GET /api/deposit/status/tx/:transactionHash
  * Get deposit status by transaction hash
