@@ -1,239 +1,163 @@
 import { Router, Request, Response } from 'express';
 import Profile from '../models/Profile';
+import DepositStatus from '../models/DepositStatus';
+import WithdrawStatus from '../models/WithdrawStatus';
+import { WithdrawService } from '../services/withdraw.service';
 
 const router: Router = Router();
+const withdrawService = new WithdrawService();
 
-// Temporary in-memory storage fallback
-let profiles: any[] = [];
-
-// Simple interface for ProfileData
-interface ProfileData {
-  user_address: string;
-  positions: Array<{
-    chain: string;
-    apy: number;
-    protocol: string;
-    poolAddress: string;
-  }>;
-}
-
-// @route   GET /api/profile
-// @desc    Get all profiles
+// @route   GET /api/profile/:userAddress
+// @desc    Get user profile
 // @access  Public
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/:userAddress', async (req: Request, res: Response): Promise<void> => {
   try {
-    // Try MongoDB first
-    const mongoProfiles = await Profile.find({}).sort({ createdAt: -1 });
-    
+    const { userAddress } = req.params;
+
+    // Get complete user profile with position, deposits, withdraws, and net amount
+    const completeProfile = await getCompleteUserProfile(userAddress);
+
     res.json({
       success: true,
-      data: mongoProfiles.map(p => ({
-        ...p.toObject()
-      })),
-      count: mongoProfiles.length,
+      data: completeProfile,
       source: 'MongoDB'
     });
   } catch (error) {
-    // Fallback to in-memory storage
-    console.log('Using in-memory storage for profiles');
-    res.json({
-      success: true,
-      data: profiles,
-      count: profiles.length,
-      source: 'In-memory storage',
-      message: 'MongoDB not available - using temporary storage'
+    console.error('Error fetching complete profile:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
     });
   }
 });
 
-// @route   POST /api/profile
-// @desc    Create or update user profile
-// @access  Public
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+/**
+ * Get complete user profile with all data
+ */
+async function getCompleteUserProfile(userAddress: string) {
   try {
-
-    const { user_address, positions }: ProfileData = req.body;
-
-    // Validation
-    if (!user_address || !positions || !Array.isArray(positions)) {
-      res.status(400).json({
-        success: false,
-        error: 'user_address and positions (array) are required'
-      });
-      return;
-    }
-
-    // Validate positions structure
-    for (const position of positions) {
-      if (!position.chain || typeof position.apy !== 'number' || !position.protocol || !position.poolAddress) {
-        res.status(400).json({
-          success: false,
-          error: 'Each position must have chain, apy (number), protocol, and poolAddress'
-        });
-        return;
-      }
-    }
-
-    try {
-
-      // Try MongoDB first
-      const result = await Profile.findOneAndUpdate(
-        { user_address },
-        { user_address, positions },
-        { upsert: true, new: true }
-      );
-
-      res.json({
-        success: true,
-        data: {
-          ...result.toObject()
+    // 1. Get active position from smart contract
+    const positionResult = await withdrawService.checkUserPosition(userAddress);
+    
+    // 2. Get deposit history
+    const deposits = await DepositStatus.find({ userWallet: userAddress })
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // 3. Get withdraw history
+    const withdraws = await WithdrawStatus.find({ userAddress })
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // 4. Calculate net amount (total deposits - total withdraws)
+    const totalDeposited = deposits
+      .filter(d => d.status === 'completed')
+      .reduce((sum, deposit) => sum + parseFloat(deposit.amount), 0);
+    
+    const totalWithdrawn = withdraws
+      .filter(w => w.status === 'completed')
+      .reduce((sum, withdraw) => {
+        // Convert amountUsdc from wei to USDC (6 decimals)
+        const amountUsdc = parseFloat(withdraw.position.amountUsdc) / 1e6;
+        return sum + amountUsdc;
+      }, 0);
+    
+    const netAmount = totalDeposited - totalWithdrawn;
+    
+    // 5. Format response
+    return {
+      userAddress,
+      activePosition: positionResult ? {
+        hasPosition: true,
+        position: {
+          ...positionResult.position,
+          // Convert amounts from wei to readable format
+          amountUsdc: (parseFloat(positionResult.position.amountUsdc) / 1e6).toString(),
+          shares: positionResult.position.shares
         },
-        source: 'MongoDB'
-      });
-
-    } catch (error) {
-      // Fallback to in-memory storage
-      console.log('Using in-memory storage for profile creation');
-      const existingIndex = profiles.findIndex(p => p.user_address === user_address);
-      const profileData = {
-        _id: Date.now().toString(),
-        user_address,
-        positions,
-        createdAt: existingIndex === -1 ? new Date().toISOString() : profiles[existingIndex].createdAt,
-        updatedAt: new Date().toISOString()
-      };
-
-      if (existingIndex >= 0) {
-        profiles[existingIndex] = { ...profiles[existingIndex], ...profileData };
-      } else {
-        profiles.push(profileData);
+        chainDomain: positionResult.chainDomain,
+        chainName: getChainNameFromDomain(positionResult.chainDomain),
+        protocolName: getProtocolName(positionResult.position.pool)
+      } : {
+        hasPosition: false,
+        position: null,
+        chainDomain: null,
+        chainName: null,
+        protocolName: null
+      },
+      deposits: deposits.map(deposit => ({
+        id: deposit._id,
+        amount: deposit.amount,
+        status: deposit.status,
+        srcChainDomain: deposit.srcChainDomain,
+        dstChainDomain: deposit.dstChainDomain,
+        srcChainName: getChainNameFromDomain(deposit.srcChainDomain),
+        dstChainName: getChainNameFromDomain(deposit.dstChainDomain),
+        protocol: deposit.opportunity.protocol,
+        apy: deposit.opportunity.apy,
+        bridgeTransactionHash: deposit.bridgeTransactionHash,
+        depositTxHash: deposit.depositTxHash,
+        createdAt: deposit.createdAt,
+        updatedAt: deposit.updatedAt,
+        errorMessage: deposit.errorMessage
+      })),
+      withdraws: withdraws.map(withdraw => ({
+        id: withdraw._id,
+        amount: (parseFloat(withdraw.position.amountUsdc) / 1e6).toString(),
+        status: withdraw.status,
+        srcChainDomain: withdraw.srcChainDomain,
+        dstChainDomain: withdraw.dstChainDomain,
+        srcChainName: getChainNameFromDomain(withdraw.srcChainDomain),
+        dstChainName: getChainNameFromDomain(withdraw.dstChainDomain),
+        protocol: getProtocolName(withdraw.position.pool),
+        initWithdrawTxHash: withdraw.initWithdrawTxHash,
+        processWithdrawTxHash: withdraw.processWithdrawTxHash,
+        createdAt: withdraw.createdAt,
+        updatedAt: withdraw.updatedAt,
+        errorMessage: withdraw.errorMessage
+      })),
+      summary: {
+        totalDeposited: totalDeposited.toFixed(6),
+        totalWithdrawn: totalWithdrawn.toFixed(6),
+        netAmount: netAmount.toFixed(6),
+        totalDeposits: deposits.length,
+        totalWithdraws: withdraws.length,
+        completedDeposits: deposits.filter(d => d.status === 'completed').length,
+        completedWithdraws: withdraws.filter(w => w.status === 'completed').length,
+        pendingDeposits: deposits.filter(d => !['completed', 'failed'].includes(d.status)).length,
+        pendingWithdraws: withdraws.filter(w => !['completed', 'failed'].includes(w.status)).length
       }
-
-      res.json({
-        success: true,
-        data: profileData,
-        source: 'In-memory storage',
-        message: 'MongoDB not available - using temporary storage'
-      });
-
-    }
+    };
   } catch (error) {
-    console.error('Error creating/updating profile:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error'
-    });
+    console.error('Error getting complete user profile:', error);
+    throw new Error('Failed to get complete user profile');
   }
-});
+}
 
-// @route   GET /api/profile/:user_address
-// @desc    Get user profile
-// @access  Public
-router.get('/:user_address', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { user_address } = req.params;
-
-    try {
-      // Try MongoDB first
-      const profile = await Profile.findOne({ user_address });
-
-      if (!profile) {
-        res.status(404).json({
-          success: false,
-          error: 'Profile not found'
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        data: {
-          ...profile.toObject()
-        },
-        source: 'MongoDB'
-      });
-    } catch (error) {
-      // Fallback to in-memory storage
-      console.log('Using in-memory storage for profile retrieval');
-      const profile = profiles.find(p => p.user_address === user_address);
-
-      if (!profile) {
-        res.status(404).json({
-          success: false,
-          error: 'Profile not found'
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        data: profile,
-        source: 'In-memory storage',
-        message: 'MongoDB not available - using temporary storage'
-      });
-    }
-  } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error'
-    });
+/**
+ * Helper function to get chain name from domain ID
+ */
+function getChainNameFromDomain(domain: number): string {
+  switch (domain) {
+    case 0: return 'Ethereum';
+    case 3: return 'Arbitrum';
+    case 6: return 'Base';
+    case 14: return 'World';
+    default: return `Unknown (${domain})`;
   }
-});
+}
 
-// @route   DELETE /api/profile/:user_address
-// @desc    Delete user profile
-// @access  Public
-router.delete('/:user_address', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { user_address } = req.params;
-
-    try {
-      // Try MongoDB first
-      const result = await Profile.deleteOne({ user_address });
-
-      if (result.deletedCount === 0) {
-        res.status(404).json({
-          success: false,
-          error: 'Profile not found'
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        message: 'Profile deleted successfully',
-        source: 'MongoDB'
-      });
-    } catch (error) {
-      // Fallback to in-memory storage
-      console.log('Using in-memory storage for profile deletion');
-      const profileIndex = profiles.findIndex(p => p.user_address === user_address);
-
-      if (profileIndex === -1) {
-        res.status(404).json({
-          success: false,
-          error: 'Profile not found'
-        });
-        return;
-      }
-
-      profiles.splice(profileIndex, 1);
-
-      res.json({
-        success: true,
-        message: 'Profile deleted successfully',
-        source: 'In-memory storage',
-        note: 'MongoDB not available - using temporary storage'
-      });
-    }
-  } catch (error) {
-    console.error('Error deleting profile:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error'
-    });
+/**
+ * Helper function to get protocol name from pool ID
+ */
+function getProtocolName(poolId: number): string {
+  switch (poolId) {
+    case 1: return 'AAVE';
+    case 2: return 'Morpho';
+    case 3: return 'Fluid';
+    default: return `Unknown (${poolId})`;
   }
-});
+}
+
 
 export default router;
