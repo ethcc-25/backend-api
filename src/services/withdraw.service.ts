@@ -21,6 +21,26 @@ export class WithdrawService {
   }
 
   /**
+   * Get Viem chain configuration
+   */
+  private getViemChain(chainName: string) {
+    switch (chainName.toLowerCase()) {
+      case 'ethereum':
+        return mainnet;
+      case 'optimism':
+        return optimism;
+      case 'arbitrum':
+        return arbitrum;
+      case 'base':
+        return base;
+      case 'world':
+        return worldchain;
+      default:
+        throw new Error(`Unsupported chain: ${chainName}`);
+    }
+  }
+
+  /**
    * Get Viem chain configuration from domain ID
    */
   private getViemChainFromDomain(domain: number) {
@@ -189,6 +209,22 @@ export class WithdrawService {
       const positionResult = await this.checkUserPosition(userAddress);
       
       if (!positionResult) {
+        // Create withdraw status with failed state if no position found
+        const withdrawStatus = await this.updateWithdrawStatus(undefined, {
+          userAddress,
+          srcChainDomain: 0,
+          dstChainDomain: 14,
+          status: 'failed',
+          errorMessage: 'No position found for this user',
+          position: {
+            pool: 0,
+            positionId: '0x0000000000000000000000000000000000000000000000000000000000000000',
+            user: userAddress,
+            amountUsdc: '0',
+            shares: '0',
+            vault: '0x0000000000000000000000000000000000000000'
+          }
+        });
         throw new Error('No position found for this user');
       }
 
@@ -307,7 +343,10 @@ export class WithdrawService {
       });
 
       // Process withdraw on WORLD chain
-      const processWithdrawTxHash = await this.callProcessWithdraw();
+      const processWithdrawTxHash = await this.callProcessWithdraw(
+        attestationData.message!,
+        attestationData.attestation!
+      );
 
       // Update status with process withdraw
       withdrawStatus = await this.updateWithdrawStatus(withdrawStatus._id, {
@@ -336,9 +375,9 @@ export class WithdrawService {
   }
 
   /**
-   * Call processWithdraw on WORLD chain
+   * Call processWithdraw on WORLD chain with message and attestation
    */
-  private async callProcessWithdraw(): Promise<string> {
+  private async callProcessWithdraw(message: string, attestation: string): Promise<string> {
     if (!this.privateKey) {
       throw new Error('Private key not configured');
     }
@@ -373,8 +412,11 @@ export class WithdrawService {
 
       console.log('Calling processWithdraw on WORLD chain...');
 
-      // Call processWithdraw function
-      const txHash = await contract.write.processWithdraw();
+      // Call processWithdraw function with message and attestation
+      const txHash = await contract.write.processWithdraw([
+        message as `0x${string}`,
+        attestation as `0x${string}`
+      ]);
 
       console.log(`ProcessWithdraw transaction sent: ${txHash}`);
 
