@@ -59,7 +59,7 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
   world: {
     chainId: 4,
     name: 'World',
-    rpcUrl: 'https://world-rpc.example.com',
+    rpcUrl: 'https://worldchain-mainnet.gateway.tenderly.co',
     contracts: {
       morpho: {
         apiUrl: 'https://api.morpho.org/graphql',
