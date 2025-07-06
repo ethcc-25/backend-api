@@ -31,9 +31,6 @@ router.get('/:userAddress', async (req: Request, res: Response): Promise<void> =
   }
 });
 
-/**
- * Get complete user profile with all data
- */
 async function getCompleteUserProfile(userAddress: string) {
   try {
     // 1. Get active position from smart contract
@@ -132,10 +129,6 @@ async function getCompleteUserProfile(userAddress: string) {
   }
 }
 
-
-/**
- * Helper function to get chain name from domain ID
- */
 function getChainNameFromDomain(domain: number): string {
   switch (domain) {
     case 0: return 'Ethereum';
@@ -146,9 +139,6 @@ function getChainNameFromDomain(domain: number): string {
   }
 }
 
-/**
- * Helper function to get protocol name from pool ID
- */
 function getProtocolName(poolId: number): string {
   switch (poolId) {
     case 1: return 'AAVE';

@@ -9,10 +9,6 @@ export class RetrieveService {
 
     private readonly isTestnet = process.env.NODE_ENV !== 'production'; // Use testnet by default
     
-
-    /**
-     * Get the base URL for CCTP API
-     */
     private getBaseUrl(): string {
         return getApiUrl(this.isTestnet);
     }
