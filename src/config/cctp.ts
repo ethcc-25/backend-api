@@ -47,6 +47,12 @@ export const CCTP_DOMAINS: { [key: string]: CCTPDomainConfig } = {
     description: 'Base',
     testnet: false
   },
+  'optimism':{
+    domain: 2,
+    name: 'Optimism',
+    description: 'Optimism',
+    testnet: false
+  }
   
 };
 

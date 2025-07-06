@@ -51,11 +51,9 @@ async function getCompleteUserProfile(userAddress: string) {
     
     // 4. Calculate net amount (total deposits - total withdraws)
     const totalDeposited = deposits
-      .filter(d => d.status === 'completed')
       .reduce((sum, deposit) => sum + parseFloat(deposit.amount), 0);
     
     const totalWithdrawn = withdraws
-      .filter(w => w.status === 'completed')
       .reduce((sum, withdraw) => {
         // Convert amountUsdc from wei to USDC (6 decimals)
         const amountUsdc = parseFloat(withdraw.position.amountUsdc) / 1e6;
@@ -103,7 +101,7 @@ async function getCompleteUserProfile(userAddress: string) {
       })),
       withdraws: withdraws.map(withdraw => ({
         id: withdraw._id,
-        amount: (parseFloat(withdraw.position.amountUsdc) / 1e6).toString(),
+        amount: withdraw.position.amountUsdc,
         status: withdraw.status,
         srcChainDomain: withdraw.srcChainDomain,
         dstChainDomain: withdraw.dstChainDomain,
@@ -117,9 +115,9 @@ async function getCompleteUserProfile(userAddress: string) {
         errorMessage: withdraw.errorMessage
       })),
       summary: {
-        totalDeposited: totalDeposited.toFixed(6),
-        totalWithdrawn: totalWithdrawn.toFixed(6),
-        netAmount: netAmount.toFixed(6),
+        totalDeposited: totalDeposited,
+        totalWithdrawn: totalWithdrawn,
+        netAmount: netAmount,
         totalDeposits: deposits.length,
         totalWithdraws: withdraws.length,
         completedDeposits: deposits.filter(d => d.status === 'completed').length,
