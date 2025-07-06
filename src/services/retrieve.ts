@@ -38,6 +38,10 @@ export class RetrieveService {
             throw new Error('Source domain must be a number');
         }
 
+        if (sourceDomain == 10){
+            sourceDomain = 2; // Use Optimism domain ID for CCTP
+        }
+
         const url = `${this.getBaseUrl()}/${sourceDomain}?transactionHash=${transactionHash}`;
 
         console.log('attestation done', url);
