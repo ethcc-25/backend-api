@@ -291,19 +291,19 @@ router.get('/all', async (req, res) => {
 
   aaveData.forEach(chainData => {
     chainData.pools.forEach(pool => {
-      allPools.push(pool);
+      allPools.push({...pool, protocol: SupportedProtocol.AAVE});
     });
   });
 
   fluidData.forEach(chainData => {
     chainData.pools.forEach(pool => {
-      allPools.push(pool);
+      allPools.push({...pool, protocol: SupportedProtocol.FLUID});
     });
   });
 
   morphoData.forEach(chainData => {
     chainData.pools.forEach(pool => {
-      allPools.push(pool);
+      allPools.push({...pool, protocol: SupportedProtocol.MORPHO});
     });
   });
 
