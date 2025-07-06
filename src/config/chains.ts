@@ -80,17 +80,6 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
         ]
       }
     }
-  },
-  optimism: {
-    chainId: 10,
-    name: 'Optimism',
-    rpcUrl: process.env.OPTIMISM_RPC_URL || 'https://optimism-mainnet.publicnode.com',
-    contracts: {
-      aave: {
-        poolAddress: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // Aave V3 Pool on Optimism
-        usdcAddress: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' // USDC on Optimism
-      }
-    }
   }
 };
 
