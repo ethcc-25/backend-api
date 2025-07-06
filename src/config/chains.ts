@@ -10,9 +10,6 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
       aave: {
         poolAddress: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // Aave V3 Pool on Arbitrum
         usdcAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' // USDC on Arbitrum
-      },
-      fluid: {
-        apiUrl: 'https://api.fluid.instadapp.io/v2/lending/42161/users/0x0000000000000000000000000000000000000000/positions'
       }
     }
   },
@@ -24,9 +21,6 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
       aave: {
         poolAddress: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5', // Aave V3 Pool on Base
         usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' // USDC on Base
-      },
-      fluid: {
-        apiUrl: 'https://api.fluid.instadapp.io/v2/lending/8453/users/0x8Acf3088E8922e9Ec462B1D592B5e6aa63B8d2D5/positions'
       },
       morpho: {
         apiUrl: 'https://api.morpho.org/graphql',
@@ -87,12 +81,15 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
       }
     }
   },
-  worldland: {
-    chainId: 103,
-    name: 'WorldLand',
-    rpcUrl: process.env.WORLDLAND_RPC_URL || 'https://worldland-rpc.example.com',
+  optimism: {
+    chainId: 10,
+    name: 'Optimism',
+    rpcUrl: process.env.OPTIMISM_RPC_URL || 'https://optimism-mainnet.publicnode.com',
     contracts: {
-      // Add contracts as needed
+      aave: {
+        poolAddress: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // Aave V3 Pool on Optimism
+        usdcAddress: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' // USDC on Optimism
+      }
     }
   }
 };

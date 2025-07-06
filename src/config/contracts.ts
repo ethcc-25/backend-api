@@ -21,7 +21,8 @@ export const YIELD_MANAGER_CONTRACTS: Record<string, ContractConfig> = {
     chainId: 8453
   },
   'optimism': {
-    address: process.env.YIELD_MANAGER_OPTIMISM || '0x0000000000000000000000000000000000000000',
+    address: process.env.YIELD_MANAGER_OP || '0x0000000000000000000000000000000000000000',
+
     chainId: 10
   },
   'world': {
